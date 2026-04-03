@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 import { logout } from "../../store/authSlice";
-import { LogOut, User, BookOpen } from "lucide-react";
+import { LogOut, User, BookOpen, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ChangePasswordModal from "../modals/ChangePasswordModal";
 
 export default function Layout({ children }) {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -40,8 +42,16 @@ export default function Layout({ children }) {
                     <span className="text-xs sm:text-sm text-emerald-400 capitalize">({user.role})</span>
                   </div>
                   <button
+                    onClick={() => setIsChangePasswordModalOpen(true)}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors shrink-0"
+                    title="Change Password"
+                  >
+                    <Key className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={handleLogout}
                     className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors shrink-0"
+                    title="Logout"
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -54,6 +64,11 @@ export default function Layout({ children }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {children}
       </main>
+      
+      <ChangePasswordModal 
+        isOpen={isChangePasswordModalOpen} 
+        onClose={() => setIsChangePasswordModalOpen(false)} 
+      />
     </div>
   );
 }

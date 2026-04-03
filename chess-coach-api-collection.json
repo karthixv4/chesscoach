@@ -156,6 +156,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            }
+          }
         }
       ]
     },
@@ -568,6 +595,35 @@
                 "classrooms",
                 "{{classroomId}}",
                 "materials"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Material",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Guidelines\",\n  \"url\": \"http://example.com/updated_file.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classrooms/{{classroomId}}/materials/{{materialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classrooms",
+                "{{classroomId}}",
+                "materials",
+                "{{materialId}}"
               ]
             }
           }

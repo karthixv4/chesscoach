@@ -171,7 +171,7 @@ export const createMaterial = createAsyncThunk('materials/create', async ({ clas
 
 export const updateMaterial = createAsyncThunk('materials/update', async ({ classroomId, materialId, materialData }, { rejectWithValue }) => {
   try {
-    const res = await api.put(`/classrooms/${classroomId}/materials/${materialId}`, materialData);
+    const res = await api.patch(`/classrooms/${classroomId}/materials/${materialId}`, materialData);
     return { classroomId, material: res.data };
   } catch (error) {
     return rejectWithValue(error.response?.data?.error || 'Failed to update material');

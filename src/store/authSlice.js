@@ -31,6 +31,18 @@ export const fetchMe = createAsyncThunk('auth/me', async (_, { rejectWithValue }
   }
 });
 
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/auth/change-password', passwordData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to change password');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   isAuthenticated: !!localStorage.getItem('token'),
