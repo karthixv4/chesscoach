@@ -1,0 +1,193 @@
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Calendar, Clock, Link as LinkIcon, Video } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { createSession, updateSessionStatus } from "../../store/classroomsSlice";
+import ClockTimePicker from "../ui/ClockTimePicker";
+
+export default function ScheduleSessionModal({
+  onClose,
+  classroomId,
+  session,
+}) {
+  const dispatch = useDispatch();
+  const { status } = useSelector((state) => state.classrooms);
+  const extractDate = (dateString) => {
+    if (!dateString) return "";
+    try { return new Date(dateString).toISOString().split("T")[0]; } catch(e) { return dateString.split("T")[0]; }
+  };
+
+  const [title, setTitle] = useState(session?.title || "");
+  const [date, setDate] = useState(extractDate(session?.date) || "");
+  const [startTime, setStartTime] = useState(session?.startTime || "");
+  const [endTime, setEndTime] = useState(session?.endTime || "");
+  const [link, setLink] = useState(session?.link || "");
+
+  useEffect(() => {
+    if (session) {
+      setTitle(session.title);
+      setDate(extractDate(session.date) || "");
+      setStartTime(session.startTime);
+      setEndTime(session.endTime);
+      setLink(session.link);
+    }
+  }, [session]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!title.trim() || !date || !startTime || !endTime || !link.trim())
+      return;
+
+    if (session) {
+      const updatedSession = {
+        status: session.status.toUpperCase(),
+        title,
+        date,
+        startTime,
+        endTime,
+        link,
+      };
+      dispatch(updateSessionStatus({ classroomId, sessionId: session.id, data: updatedSession }));
+    } else {
+      const newSession = {
+        title,
+        date,
+        startTime,
+        endTime,
+        link,
+      };
+      dispatch(createSession({ classroomId, sessionData: newSession }));
+    }
+
+    onClose();
+  };
+
+  return (
+    <>
+      {status === "loading" && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-slate-600 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-emerald-400 font-medium animate-pulse">Updating Session...</p>
+          </div>
+        </div>
+      )}
+      <AnimatePresence>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+          <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        >
+          <div className="p-4 sm:p-6 border-b border-slate-700 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                <Video className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-semibold text-white">
+                {session ? "Edit Session" : "Schedule Session"}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-slate-500 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                Session Title
+              </label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                placeholder="e.g., Weekly Strategy Review"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                Date
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="date"
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                  Start Time
+                </label>
+                <ClockTimePicker
+                  value={startTime}
+                  onChange={setStartTime}
+                  placeholder="Select time"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                  End Time
+                </label>
+                <ClockTimePicker
+                  value={endTime}
+                  onChange={setEndTime}
+                  placeholder="Select time"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                Meeting Link
+              </label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="url"
+                  required
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  placeholder="https://meet.google.com/..."
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                {status === "loading" ? (session ? "Updating..." : "Scheduling...") : (session ? "Update Session" : "Schedule")}
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+    </>
+  );
+}
