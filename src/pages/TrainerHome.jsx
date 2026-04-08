@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import { setActiveClassroom, fetchClassrooms, deleteClassroom } from "../store/classroomsSlice";
+import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails } from "../store/classroomsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,7 +25,15 @@ export default function TrainerHome() {
   const [editingStudent, setEditingStudent] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchClassrooms());
+    dispatch(fetchClassrooms()).then((action) => {
+      if (action.meta.requestStatus === "fulfilled" && Array.isArray(action.payload)) {
+        action.payload.forEach((c) => {
+          if (!c.homework || !c.lessons) {
+            dispatch(fetchClassroomDetails(c.id));
+          }
+        });
+      }
+    });
   }, [dispatch]);
 
   const [confirmation, setConfirmation] = useState({

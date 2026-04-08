@@ -58,6 +58,15 @@ export const createSession = createAsyncThunk('sessions/create', async ({ classr
 });
 
 
+export const updateSession = createAsyncThunk('sessions/update', async ({ classroomId, sessionId, sessionData }, { rejectWithValue }) => {
+  try {
+    const res = await api.patch(`/classrooms/${classroomId}/sessions/${sessionId}`, sessionData);
+    return { classroomId, session: res.data };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to update session');
+  }
+});
+
 export const updateSessionStatus = createAsyncThunk('sessions/updateStatus', async ({ classroomId, sessionId, data }, { rejectWithValue }) => {
   try {
     const res = await api.patch(`/classrooms/${classroomId}/sessions/${sessionId}/status`, data);
@@ -97,7 +106,7 @@ export const createLesson = createAsyncThunk('lessons/create', async ({ classroo
 
 export const updateLesson = createAsyncThunk('lessons/update', async ({ classroomId, lessonId, lessonData }, { rejectWithValue }) => {
   try {
-    const res = await api.put(`/classrooms/${classroomId}/lessons/${lessonId}`, lessonData);
+    const res = await api.patch(`/classrooms/${classroomId}/lessons/${lessonId}`, lessonData);
     return { classroomId, lesson: res.data };
   } catch (error) {
     return rejectWithValue(error.response?.data?.error || 'Failed to update lesson');
@@ -134,7 +143,7 @@ export const createHomework = createAsyncThunk('homework/create', async ({ class
 
 export const updateHomework = createAsyncThunk('homework/update', async ({ classroomId, homeworkId, homeworkData }, { rejectWithValue }) => {
   try {
-    const res = await api.put(`/classrooms/${classroomId}/homework/${homeworkId}`, homeworkData);
+    const res = await api.patch(`/classrooms/${classroomId}/homework/${homeworkId}`, homeworkData);
     return { classroomId, homework: res.data };
   } catch (error) {
     return rejectWithValue(error.response?.data?.error || 'Failed to update homework');
@@ -304,9 +313,16 @@ const classroomsSlice = createSlice({
     });
 
     // Sessions
+
     builder.addCase(createSession.fulfilled, (state, action) => {
       updateActiveIfMatch(state, action.payload.classroomId, (c) => {
         c.sessions.push(action.payload.session);
+      });
+    });
+    builder.addCase(updateSession.fulfilled, (state, action) => {
+      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
+        const idx = c.sessions.findIndex(s => s.id === action.payload.session.id);
+        if (idx !== -1) c.sessions[idx] = action.payload.session;
       });
     });
     builder.addCase(updateSessionStatus.fulfilled, (state, action) => {
