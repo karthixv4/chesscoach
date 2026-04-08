@@ -14,6 +14,7 @@ import {
   File,
   X,
   Calendar,
+  CalendarPlus,
   Star,
   Trash2,
   Edit2,
@@ -88,7 +89,7 @@ export default function Classroom() {
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
   const [submissionFiles, setSubmissionFiles] = useState({}); // hwId -> File[]
   const [submissionPreviews, setSubmissionPreviews] = useState({}); // hwId -> string[]
@@ -99,12 +100,12 @@ export default function Classroom() {
   const foundClassroom = classrooms.find((c) => c.id === id);
   const classroom = foundClassroom
     ? {
-        ...foundClassroom,
-        lessons: (foundClassroom.lessons || []).map(l => ({ ...l, status: l.status?.toLowerCase() })),
-        sessions: (foundClassroom.sessions || []).map(s => ({ ...s, status: s.status?.toLowerCase() })),
-        homework: (foundClassroom.homework || []).map(h => ({ ...h, status: h.status?.toLowerCase() })),
-        materials: foundClassroom.materials || [],
-      }
+      ...foundClassroom,
+      lessons: (foundClassroom.lessons || []).map(l => ({ ...l, status: l.status?.toLowerCase() })),
+      sessions: (foundClassroom.sessions || []).map(s => ({ ...s, status: s.status?.toLowerCase() })),
+      homework: (foundClassroom.homework || []).map(h => ({ ...h, status: h.status?.toLowerCase() })),
+      materials: foundClassroom.materials || [],
+    }
     : null;
   const isTrainer = user?.role === "trainer";
 
@@ -345,79 +346,99 @@ export default function Classroom() {
           if (!targetDate || !targetTime) return null;
           const sDateTime = new Date(`${targetDate}T${targetTime}:00`);
           const diffMs = sDateTime - currentTime;
-          
+
           if (diffMs > 0 && diffMs < 7 * 24 * 60 * 60 * 1000) {
             const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             const hrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            
+
             if (days > 0) return `Starts in ${days}d ${hrs}h`;
             if (hrs > 0) return `Starts in ${hrs}h ${mins}m`;
             return `Starts in ${mins}m`;
           } else if (diffMs <= 0 && diffMs > -60 * 60 * 1000) {
-             return "Just started";
+            return "Just started";
           }
           return null;
         };
 
+        const getGoogleCalendarUrl = (session, classroomContext) => {
+          const targetDateStr = session.rescheduledDate ? session.rescheduledDate.split('T')[0] : (session.date ? session.date.split('T')[0] : null);
+          const targetStart = session.rescheduledStart || session.startTime;
+          const targetEnd = session.rescheduledEnd || session.endTime;
+
+          if (!targetDateStr || !targetStart || !targetEnd) return "#";
+
+          const formatTime = (dateStr, timeStr) => {
+            return `${dateStr.replace(/-/g, '')}T${timeStr.replace(/:/g, '')}00`;
+          };
+
+          const cDateStart = formatTime(targetDateStr, targetStart);
+          const cDateEnd = formatTime(targetDateStr, targetEnd);
+
+          const titleComponent = encodeURIComponent(`${classroomContext?.name || 'Chess class'} - ${session.title}`);
+          const detailsComponent = encodeURIComponent(`Link: ${session.link}`);
+          const locationComponent = encodeURIComponent(session.link || "");
+
+          return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titleComponent}&dates=${cDateStart}/${cDateEnd}&details=${detailsComponent}&location=${locationComponent}`;
+        };
+
         const renderSessionCard = (session) => {
           const upcomingText = getUpcomingTimeInfo(session);
-          
+
           return (
-          <div
-            key={session.id}
-            onClick={() => setViewingSessionId(session.id)}
-            className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 group relative cursor-pointer hover:border-emerald-500/50 transition-colors"
-          >
-            {isTrainer && (
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setUpdatingSession(session);
-                    setIsUpdateStatusModalOpen(true);
-                  }}
-                  className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
-                  title="Update Status"
-                >
-                  <CheckSquare className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingSession(session);
-                    setIsScheduleModalOpen(true);
-                  }}
-                  className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmation({
-                      isOpen: true,
-                      title: "Cancel Session",
-                      message: `Are you sure you want to cancel "${session.title}"?`,
-                      onConfirm: () =>
-                        dispatch(
-                          deleteSession({
-                            classroomId: classroom.id,
-                            sessionId: session.id,
-                          }),
-                        ),
-                    });
-                  }}
-                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  session.status === "ongoing"
+            <div
+              key={session.id}
+              onClick={() => setViewingSessionId(session.id)}
+              className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 group relative cursor-pointer hover:border-emerald-500/50 transition-colors"
+            >
+              {isTrainer && (
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUpdatingSession(session);
+                      setIsUpdateStatusModalOpen(true);
+                    }}
+                    className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                    title="Update Status"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingSession(session);
+                      setIsScheduleModalOpen(true);
+                    }}
+                    className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmation({
+                        isOpen: true,
+                        title: "Cancel Session",
+                        message: `Are you sure you want to cancel "${session.title}"?`,
+                        onConfirm: () =>
+                          dispatch(
+                            deleteSession({
+                              classroomId: classroom.id,
+                              sessionId: session.id,
+                            }),
+                          ),
+                      });
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${session.status === "ongoing"
                     ? "bg-emerald-500/20 text-emerald-400 animate-pulse"
                     : session.status === "scheduled"
                       ? "bg-blue-500/10 text-blue-400"
@@ -430,20 +451,19 @@ export default function Classroom() {
                             : session.status === "preponed"
                               ? "bg-purple-500/10 text-purple-400"
                               : "bg-amber-500/10 text-amber-400"
-                }`}
-              >
-                {session.status === "ongoing" ? (
-                  <Video className="w-5 h-5" />
-                ) : (
-                  <Calendar className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-white">{session.title}</h3>
-                  <span
-                    className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md font-bold ${
-                      session.status === "ongoing"
+                    }`}
+                >
+                  {session.status === "ongoing" ? (
+                    <Video className="w-5 h-5" />
+                  ) : (
+                    <Calendar className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-white">{session.title}</h3>
+                    <span
+                      className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md font-bold ${session.status === "ongoing"
                         ? "bg-emerald-500 text-white"
                         : session.status === "scheduled"
                           ? "bg-blue-500 text-white"
@@ -456,155 +476,167 @@ export default function Classroom() {
                                 : session.status === "preponed"
                                   ? "bg-purple-500 text-white"
                                   : "bg-amber-500 text-white"
-                    }`}
-                  >
-                    {session.status}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-400">
-                  {new Date(session.date).toLocaleDateString(undefined, {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-2 text-slate-300 text-sm">
-                <Clock className="w-4 h-4 text-slate-500" />
-                <span>
-                  {session.startTime} - {session.endTime}
-                </span>
-                {upcomingText && (
-                  <span className="ml-2 px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {upcomingText}
-                  </span>
-                )}
-              </div>
-
-              {session.status === "cancelled" && session.cancellationReason && (
-                <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl">
-                  <p className="text-xs text-red-400 font-medium uppercase mb-1">
-                    Cancellation Reason
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    {session.cancellationReason}
+                        }`}
+                    >
+                      {session.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    {new Date(session.date).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
-              )}
+              </div>
 
-              {(session.status === "postponed" ||
-                session.status === "preponed") &&
-                session.rescheduledDate && (
-                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                    <p className="text-xs text-amber-400 font-medium uppercase mb-1">
-                      Rescheduled To
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-2 text-slate-300 text-sm">
+                  <Clock className="w-4 h-4 text-slate-500" />
+                  <span>
+                    {session.startTime} - {session.endTime}
+                  </span>
+                  {upcomingText && (
+                    <span className="ml-2 px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {upcomingText}
+                    </span>
+                  )}
+                </div>
+
+                {session.status === "cancelled" && session.cancellationReason && (
+                  <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl">
+                    <p className="text-xs text-red-400 font-medium uppercase mb-1">
+                      Cancellation Reason
                     </p>
                     <p className="text-sm text-slate-300">
-                      {new Date(
-                        session.rescheduledDate,
-                      ).toLocaleDateString()}{" "}
-                      at {session.rescheduledStart}
+                      {session.cancellationReason}
                     </p>
                   </div>
                 )}
 
-              {session.status === "completed" &&
-                (session.notes || session.materials) && (
-                  <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-xl space-y-2">
-                    {session.notes && (
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium uppercase mb-1">
-                          Session Notes
-                        </p>
-                        <p className="text-sm text-slate-300 line-clamp-2">
-                          {session.notes}
-                        </p>
-                      </div>
-                    )}
-                    {session.materials && session.materials.length > 0 && (
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium uppercase mb-1">
-                          Materials
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {session.materials.map((mat) => {
-                            if (mat.type?.toLowerCase() === "image" && mat.url) {
-                              return mat.url.split(",").map((src, i) => (
-                                <img
-                                  key={`${mat.id}-${i}`}
-                                  src={src}
-                                  alt="material"
-                                  className="h-8 w-8 rounded object-cover cursor-pointer hover:opacity-80 border border-slate-600 shadow-sm transition-opacity"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setViewerImage(src);
-                                  }}
-                                />
-                              ));
-                            }
-                            return (
-                              <a
-                                key={mat.id}
-                                href={mat.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-emerald-400 hover:underline flex items-center gap-1 bg-emerald-400/5 px-2 py-1 rounded-lg border border-emerald-400/10"
-                              >
-                                <Library className="w-3 h-3" /> {mat.title}
-                              </a>
-                            );
-                          })}
+                {(session.status === "postponed" ||
+                  session.status === "preponed") &&
+                  session.rescheduledDate && (
+                    <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                      <p className="text-xs text-amber-400 font-medium uppercase mb-1">
+                        Rescheduled To
+                      </p>
+                      <p className="text-sm text-slate-300">
+                        {new Date(
+                          session.rescheduledDate,
+                        ).toLocaleDateString()}{" "}
+                        at {session.rescheduledStart}
+                      </p>
+                    </div>
+                  )}
+
+                {session.status === "completed" &&
+                  (session.notes || session.materials) && (
+                    <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-xl space-y-2">
+                      {session.notes && (
+                        <div>
+                          <p className="text-xs text-slate-400 font-medium uppercase mb-1">
+                            Session Notes
+                          </p>
+                          <p className="text-sm text-slate-300 line-clamp-2">
+                            {session.notes}
+                          </p>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                      {session.materials && session.materials.length > 0 && (
+                        <div>
+                          <p className="text-xs text-slate-400 font-medium uppercase mb-1">
+                            Materials
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {session.materials.map((mat) => {
+                              if (mat.type?.toLowerCase() === "image" && mat.url) {
+                                return mat.url.split(",").map((src, i) => (
+                                  <img
+                                    key={`${mat.id}-${i}`}
+                                    src={src}
+                                    alt="material"
+                                    className="h-8 w-8 rounded object-cover cursor-pointer hover:opacity-80 border border-slate-600 shadow-sm transition-opacity"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setViewerImage(src);
+                                    }}
+                                  />
+                                ));
+                              }
+                              return (
+                                <a
+                                  key={mat.id}
+                                  href={mat.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-emerald-400 hover:underline flex items-center gap-1 bg-emerald-400/5 px-2 py-1 rounded-lg border border-emerald-400/10"
+                                >
+                                  <Library className="w-3 h-3" /> {mat.title}
+                                </a>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-              {session.link &&
-                session.status !== "cancelled" &&
-                session.status !== "completed" && (
-                  <div className="flex items-center gap-2 text-slate-300 text-sm">
-                    <LinkIcon className="w-4 h-4 text-slate-500" />
-                    <a
-                      href={session.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:underline truncate max-w-[200px]"
-                    >
-                      {session.link}
-                    </a>
-                  </div>
-                )}
+                {session.link &&
+                  session.status !== "cancelled" &&
+                  session.status !== "completed" && (
+                    <div className="flex items-center gap-2 text-slate-300 text-sm">
+                      <LinkIcon className="w-4 h-4 text-slate-500" />
+                      <a
+                        href={session.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 hover:underline truncate max-w-[200px]"
+                      >
+                        {session.link}
+                      </a>
+                    </div>
+                  )}
+              </div>
+
+              {session.status === "ongoing" && (
+                <a
+                  href={session.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors"
+                >
+                  <Video className="w-4 h-4" /> Join Live Session
+                </a>
+              )}
+
+              {session.status === "scheduled" && (
+                <a
+                  href={session.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+                >
+                  Join Session
+                </a>
+              )}
+
+              {["scheduled", "postponed", "preponed"].includes(session.status) && (
+                <a
+                  href={getGoogleCalendarUrl(session, classroom)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full mt-3 flex items-center justify-center gap-2 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl font-medium transition-colors"
+                >
+                  <CalendarPlus className="w-4 h-4" /> Add to Google Calendar
+                </a>
+              )}
             </div>
-
-            {session.status === "ongoing" && (
-              <a
-                href={session.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors"
-              >
-                <Video className="w-4 h-4" /> Join Live Session
-              </a>
-            )}
-
-            {session.status === "scheduled" && (
-              <a
-                href={session.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
-              >
-                Join Session
-              </a>
-            )}
-          </div>
-        );
-      };
+          );
+        };
 
         return (
           <div className="space-y-10">
@@ -843,7 +875,7 @@ export default function Classroom() {
                               placeholder="Type your answer here..."
                               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 resize-none h-24 mb-4 text-sm"
                             />
-                            
+
                             <p className="text-sm text-slate-400">Attach evidence images (optional)</p>
                             <input
                               type="file"
@@ -1193,11 +1225,10 @@ export default function Classroom() {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-                isActive
-                  ? "text-white"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
-              }`}
+              className={`relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${isActive
+                ? "text-white"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
+                }`}
             >
               {isActive && (
                 <motion.div
@@ -1496,7 +1527,7 @@ export default function Classroom() {
                         <p className="text-slate-200 text-lg">{hw.challenge.description}</p>
                       </div>
                     )}
-                    
+
                     <div className="px-4">
                       <InteractiveBoard
                         id={`modal-board-${hw.id}`}
