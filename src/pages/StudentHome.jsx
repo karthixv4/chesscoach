@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchClassrooms, fetchStudentSessions, fetchClassroomDetails } from "../store/classroomsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, CheckCircle, Clock, ChevronRight, Calendar, FileText } from "lucide-react";
+import { BookOpen, CheckCircle, Clock, ChevronRight, Calendar, FileText, CalendarPlus } from "lucide-react";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
@@ -18,6 +18,12 @@ export default function StudentHome() {
   const [puzzleLoading, setPuzzleLoading] = useState(true);
   const [puzzleError, setPuzzleError] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const tabs = [
     { id: "upcoming", label: "Upcoming Sessions", icon: Clock },
@@ -90,13 +96,55 @@ export default function StudentHome() {
   const completedHomework = (classroom.homework || []).filter(
     (h) => h.status?.toLowerCase() !== "assigned",
   );
-  const now = new Date();
-  const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const todayStr = new Date(currentTime.getTime() - currentTime.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const getEffectiveDate = (s) => s.rescheduledDate ? s.rescheduledDate.split('T')[0] : (s.date ? s.date.split('T')[0] : "");
 
   const upcomingSessions = (studentSessions || classroom.sessions || []).filter(
     (s) => ["SCHEDULED", "POSTPONED", "PREPONED"].includes(s.status?.toUpperCase()) && getEffectiveDate(s) >= todayStr
   );
+
+  const getUpcomingTimeInfo = (s) => {
+    if (!["SCHEDULED", "POSTPONED", "PREPONED"].includes(s.status?.toUpperCase())) return null;
+    const targetDate = s.rescheduledDate ? s.rescheduledDate.split('T')[0] : (s.date ? s.date.split('T')[0] : null);
+    const targetTime = s.rescheduledStart || s.startTime;
+    if (!targetDate || !targetTime) return null;
+    const sDateTime = new Date(`${targetDate}T${targetTime}:00`);
+    const diffMs = sDateTime - currentTime;
+    
+    if (diffMs > 0 && diffMs < 7 * 24 * 60 * 60 * 1000) {
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `Starts in ${days}d ${hrs}h`;
+      if (hrs > 0) return `Starts in ${hrs}h ${mins}m`;
+      return `Starts in ${mins}m`;
+    } else if (diffMs <= 0 && diffMs > -60 * 60 * 1000) {
+       return "Just started";
+    }
+    return null;
+  };
+
+  const getGoogleCalendarUrl = (session, classroomContext) => {
+    const targetDateStr = session.rescheduledDate ? session.rescheduledDate.split('T')[0] : (session.date ? session.date.split('T')[0] : null);
+    const targetStart = session.rescheduledStart || session.startTime;
+    const targetEnd = session.rescheduledEnd || session.endTime;
+    
+    if (!targetDateStr || !targetStart || !targetEnd) return "#";
+    
+    const formatTime = (dateStr, timeStr) => {
+      return `${dateStr.replace(/-/g, '')}T${timeStr.replace(/:/g, '')}00`;
+    };
+
+    const cDateStart = formatTime(targetDateStr, targetStart);
+    const cDateEnd = formatTime(targetDateStr, targetEnd);
+    
+    const titleComponent = encodeURIComponent(`${classroomContext?.name || 'Chess class'} - ${session.title}`);
+    const detailsComponent = encodeURIComponent(`Link: ${session.link}`);
+    const locationComponent = encodeURIComponent(session.link || "");
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titleComponent}&dates=${cDateStart}/${cDateEnd}&details=${detailsComponent}&location=${locationComponent}`;
+  };
 
   return (
     <div className="space-y-8">
@@ -215,35 +263,56 @@ export default function StudentHome() {
                       No upcoming sessions scheduled.
                     </div>
                   ) : (
-                    upcomingSessions.map((session, i) => (
+                    upcomingSessions.map((session, i) => {
+                      const upcomingText = getUpcomingTimeInfo(session);
+                      return (
                       <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.1 }}
                         key={session.id}
-                        className="p-6 hover:bg-slate-700/30 transition-colors flex items-center justify-between group"
+                        className="p-6 hover:bg-slate-700/30 transition-colors flex items-center justify-between group flex-wrap gap-4"
                       >
                         <div>
                           <h3 className="font-medium text-lg group-hover:text-blue-400 transition-colors">
                             {session.title}
                           </h3>
-                          <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                            <Clock className="w-4 h-4" />
-                            {new Date(session.date).toLocaleDateString()} • {session.startTime} - {session.endTime}
-                          </p>
+                          <div className="flex items-center flex-wrap gap-2 mt-2">
+                            <p className="text-sm text-slate-400 flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              {new Date(session.date).toLocaleDateString()} • {session.startTime} - {session.endTime}
+                            </p>
+                            {upcomingText && (
+                              <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> {upcomingText}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        {session.link && (
-                          <a
-                            href={session.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                          >
-                            Join
-                          </a>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {["SCHEDULED", "POSTPONED", "PREPONED"].includes(session.status?.toUpperCase()) && (
+                            <a
+                              href={getGoogleCalendarUrl(session, classroom)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                            >
+                              <CalendarPlus className="w-4 h-4" /> Add to Calendar
+                            </a>
+                          )}
+                          {session.link && (
+                            <a
+                              href={session.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                            >
+                              Join
+                            </a>
+                          )}
+                        </div>
                       </motion.div>
-                    ))
+                    )})
                   )}
                 </div>
               </div>
