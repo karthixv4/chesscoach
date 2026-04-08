@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import { setActiveClassroom, fetchClassrooms } from "../store/classroomsSlice";
+import { setActiveClassroom, fetchClassrooms, deleteClassroom } from "../store/classroomsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -187,6 +187,21 @@ export default function TrainerHome() {
                   className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                 >
                   <Edit2 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmation({
+                      isOpen: true,
+                      title: "Delete Student",
+                      message: `Are you sure you want to delete ${classroom.studentName}? This will permanently remove all related details (lessons, homework, sessions, etc).`,
+                      onConfirm: () => dispatch(deleteClassroom(classroom.id))
+                    });
+                  }}
+                  className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  title="Delete Student"
+                >
+                  <Trash2 className="w-5 h-5" />
                 </button>
                 <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
               </div>

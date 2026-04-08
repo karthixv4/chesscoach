@@ -29,6 +29,15 @@ export const createClassroom = createAsyncThunk('classrooms/create', async (data
   }
 });
 
+export const deleteClassroom = createAsyncThunk('classrooms/delete', async (id, { rejectWithValue }) => {
+  try {
+    await api.delete(`/classrooms/${id}`);
+    return id;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to delete student');
+  }
+});
+
 export const addNotes = createAsyncThunk('classrooms/addNotes', async ({ classroomId, notes }, { rejectWithValue }) => {
   try {
     const res = await api.post(`/classrooms/${classroomId}/notes`, { notes });
@@ -277,6 +286,14 @@ const classroomsSlice = createSlice({
     // Create Classroom
     builder.addCase(createClassroom.fulfilled, (state, action) => {
       state.classrooms.push(action.payload);
+    });
+
+    // Delete Classroom
+    builder.addCase(deleteClassroom.fulfilled, (state, action) => {
+      state.classrooms = state.classrooms.filter(c => c.id !== action.payload);
+      if (state.activeClassroom?.id === action.payload) {
+        state.activeClassroom = null;
+      }
     });
 
     // Notes
