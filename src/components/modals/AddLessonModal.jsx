@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, BookOpen, Calendar, Video, Code } from "lucide-react";
+import { X, BookOpen, Calendar, Video, Code, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { createLesson, updateLesson } from "../../store/classroomsSlice";
 
 export default function AddLessonModal({ onClose, classroomId, lesson }) {
   const dispatch = useDispatch();
   const { status } = useSelector((state) => state.classrooms);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState(lesson?.title || "");
   const [date, setDate] = useState(
     lesson?.date || new Date().toISOString().split("T")[0],
@@ -18,7 +19,7 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
   const [videoUrl, setVideoUrl] = useState(lesson?.videoUrl || "");
   const [pgn, setPgn] = useState(lesson?.pgn || "");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !date || !summary.trim()) return;
 
@@ -33,18 +34,32 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
       status: lesson?.status || "new",
     };
 
-    if (lesson) {
-      dispatch(updateLesson({ classroomId, lessonId: lesson.id, lessonData }));
-    } else {
-      delete lessonData.id;
-      dispatch(createLesson({ classroomId, lessonData }));
+    try {
+      setIsSubmitting(true);
+      if (lesson) {
+        await dispatch(updateLesson({ classroomId, lessonId: lesson.id, lessonData })).unwrap();
+      } else {
+        delete lessonData.id;
+        await dispatch(createLesson({ classroomId, lessonData })).unwrap();
+      }
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
+      {isSubmitting && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md">
+          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+            <p className="text-emerald-400 font-medium">Saving lesson...</p>
+          </div>
+        </div>
+      )}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -169,10 +184,10 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
             </button>
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={isSubmitting}
               className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
             >
-              {status === "loading" ? "Saving..." : (lesson ? "Update Lesson" : "Create Lesson")}
+              {isSubmitting ? "Saving..." : (lesson ? "Update Lesson" : "Create Lesson")}
             </button>
           </div>
         </form>

@@ -12,6 +12,7 @@ import {
   Play,
   FileText,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -27,7 +28,7 @@ export default function UpdateSessionStatusModal({
   const classroom = useSelector((state) =>
     state.classrooms.classrooms.find((c) => c.id === classroomId),
   );
-  const requestStatus = useSelector((state) => state.classrooms.status);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const extractDate = (dateString) => {
     if (!dateString) return "";
@@ -47,39 +48,46 @@ export default function UpdateSessionStatusModal({
   );
   const [notes, setNotes] = useState(session.notes || "");
   const [selectedMaterials, setSelectedMaterials] = useState(
-    session.materials?.map((m) => m.id) || [],
+    session.sessionMaterials?.map((sm) => sm.material?.id || sm.materialId) || session.materials?.map((m) => m.id) || [],
   );
   const [selectedHomework, setSelectedHomework] = useState(
-    session.homeworkIds || [],
+    session.sessionHomework?.map((sh) => sh.homework?.id || sh.homeworkId) || session.homeworkIds || session.homework?.map((h) => h.id) || [],
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = {
-      classroomId,
-      sessionId: session.id,
-      data: {
-        status: status.toUpperCase(),
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        classroomId,
+        sessionId: session.id,
+        data: {
+          status: status.toUpperCase(),
+        }
+      };
+
+      if (status === "cancelled") {
+        payload.data.cancellationReason = reason;
+      } else if (status === "postponed" || status === "preponed") {
+        payload.data.rescheduledTo = {
+          date: rescheduleDate || null,
+          startTime: rescheduleStart,
+          endTime: rescheduleEnd
+        };
+      } else if (status === "completed") {
+        payload.data.notes = notes;
+        payload.data.materialIds = selectedMaterials;
+        payload.data.homeworkIds = selectedHomework;
       }
-    };
 
-    if (status === "cancelled") {
-      payload.data.cancellationReason = reason;
-    } else if (status === "postponed" || status === "preponed") {
-      payload.data.rescheduledDate = rescheduleDate ? new Date(rescheduleDate).toISOString() : null;
-      payload.data.rescheduledStart = rescheduleStart;
-      payload.data.rescheduledEnd = rescheduleEnd;
-    } else if (status === "completed") {
-      payload.data.notes = notes;
-      payload.data.materials = classroom?.materials.filter((m) =>
-        selectedMaterials.includes(m.id),
-      );
-      payload.data.homeworkIds = selectedHomework;
+      await dispatch(updateSessionStatus(payload)).unwrap();
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    dispatch(updateSessionStatus(payload));
-    onClose();
   };
 
   const toggleMaterial = (id) => {
@@ -96,11 +104,11 @@ export default function UpdateSessionStatusModal({
 
   return (
     <>
-      {requestStatus === "loading" && (
+      {isSubmitting && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md">
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-slate-600 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-            <p className="text-amber-400 font-medium animate-pulse">Updating Status...</p>
+            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mb-4" />
+            <p className="text-emerald-400 font-medium animate-pulse">Updating Status...</p>
           </div>
         </div>
       )}
@@ -354,15 +362,17 @@ export default function UpdateSessionStatusModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
               >
-                Update Status
+                {isSubmitting ? "Updating..." : "Update Status"}
               </button>
             </div>
           </form>

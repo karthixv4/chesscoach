@@ -39,7 +39,7 @@ export default function AssignHomeworkModal({
   // Image upload
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState(homework?.imageUrls || []);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   // Board specific
@@ -180,7 +180,7 @@ export default function AssignHomeworkModal({
     if (!title.trim()) return;
 
     try {
-      setIsUploading(true);
+      setIsSubmitting(true);
 
       // Upload only newly picked files; keep already-known URLs from imagePreviews
       const existingUrls = imagePreviews.filter((p) => p.startsWith('http'));
@@ -198,40 +198,41 @@ export default function AssignHomeworkModal({
         id: homework?.id || `hw-${Date.now()}`,
         title,
         type: backendType,
-        description,
         status: homework?.status || "assigned",
         imageUrls,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       };
 
       if (type === "worksheet") {
+        homeworkData.description = description;
         homeworkData.fileUrl = fileUrl || "#";
       } else {
         homeworkData.challenge = {
           id: homework?.challenge?.id || `ch-${Date.now()}`,
           fen: fen,
           winningMoves: winningMoves,
+          orientation: boardOrientation,
           description,
         };
       }
 
       if (homework) {
-        dispatch(
+        await dispatch(
           updateHomework({
             classroomId: selectedClassroomId,
             homeworkId: homework.id,
             homeworkData,
           }),
-        );
+        ).unwrap();
       } else {
         delete homeworkData.id;
         if (homeworkData.challenge) delete homeworkData.challenge.id;
-        dispatch(
+        await dispatch(
           createHomework({
             classroomId: selectedClassroomId,
             homeworkData,
           }),
-        );
+        ).unwrap();
       }
 
       onClose();
@@ -239,7 +240,7 @@ export default function AssignHomeworkModal({
       console.error('Image upload failed:', err);
       alert(`Upload failed: ${err.message}`);
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -251,11 +252,11 @@ export default function AssignHomeworkModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-10 pb-10 bg-slate-900/80 overflow-y-auto">
-      {isUploading && (
+      {isSubmitting && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md">
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-            <p className="text-emerald-400 font-medium">Uploading images...</p>
+            <p className="text-emerald-400 font-medium">Saving homework...</p>
           </div>
         </div>
       )}
@@ -628,10 +629,10 @@ export default function AssignHomeworkModal({
             </button>
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={isSubmitting}
               className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
             >
-              {status === "loading" ? "Assigning..." : "Assign Homework"}
+              {isSubmitting ? "Saving..." : "Assign Homework"}
             </button>
           </div>
         </form>

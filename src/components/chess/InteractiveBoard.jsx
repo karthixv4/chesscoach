@@ -17,6 +17,7 @@ export default function InteractiveBoard({
   onSuccess,
   classroomId,
   studentName,
+  targetOrientation,
 }) {
   const [game, setGame] = useState(() => {
     try {
@@ -31,6 +32,7 @@ export default function InteractiveBoard({
   const [hintMessage, setHintMessage] = useState("");
   const [hintSent, setHintSent] = useState(false);
   const [boardOrientation, setBoardOrientation] = useState(() => {
+    if (targetOrientation) return targetOrientation;
     try {
       const g = new Chess(initialFen || undefined);
       return g.turn() === "w" ? "white" : "black";
@@ -45,10 +47,10 @@ export default function InteractiveBoard({
     try {
       const newGame = new Chess(initialFen || undefined);
       setGame(newGame);
-      setBoardOrientation(newGame.turn() === "w" ? "white" : "black");
+      setBoardOrientation(targetOrientation || (newGame.turn() === "w" ? "white" : "black"));
     } catch (e) {
       setGame(new Chess());
-      setBoardOrientation("white");
+      setBoardOrientation(targetOrientation || "white");
     }
     setMoveIndex(0);
     setFeedback(null);
@@ -82,8 +84,15 @@ export default function InteractiveBoard({
     if (isTrainer || !winningMoves || winningMoves.length === 0) return;
     if (moveIndex >= winningMoves.length) return;
 
-    // If it's the opponent's turn (odd moveIndex)
-    if (moveIndex % 2 === 1) {
+    // Determine who plays the current move
+    // If the student's assigned orientation is exactly opposite of the current starting turn,
+    // then the opponent plays the first move (moveIndex 0).
+    const isOpponentTurnToStart = game.turn() !== boardOrientation.charAt(0);
+    const isOpponentTurn = isOpponentTurnToStart
+      ? moveIndex % 2 === 0
+      : moveIndex % 2 === 1;
+
+    if (isOpponentTurn) {
       const timer = setTimeout(() => {
         try {
           const gameCopy = new Chess(game.fen());
@@ -107,7 +116,7 @@ export default function InteractiveBoard({
 
       return () => clearTimeout(timer);
     }
-  }, [moveIndex, winningMoves, isTrainer, game, onSuccess]);
+  }, [moveIndex, winningMoves, isTrainer, game, onSuccess, boardOrientation]);
 
   const onDrop = useCallback(
     (sourceSquare, targetSquare, piece) => {
@@ -142,8 +151,13 @@ export default function InteractiveBoard({
 
         // Challenge Mode (Student solving a puzzle)
         if (moveIndex < winningMoves.length) {
-          // Prevent moving if it's the opponent's turn
-          if (moveIndex % 2 === 1) return false;
+          // Check if it's the opponent's turn dynamically
+          const isOpponentTurnToStart = game.turn() !== boardOrientation.charAt(0);
+          const isOpponentTurn = isOpponentTurnToStart
+            ? moveIndex % 2 === 0
+            : moveIndex % 2 === 1;
+
+          if (isOpponentTurn) return false;
 
           const expectedMove = winningMoves[moveIndex];
           console.log("Challenge mode", {

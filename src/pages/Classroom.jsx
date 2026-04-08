@@ -23,6 +23,7 @@ import {
   Loader2,
   Image as ImageIcon,
   ChevronLeft,
+  LayoutGrid,
 } from "lucide-react";
 import InteractiveBoard from "../components/chess/InteractiveBoard";
 import {
@@ -42,6 +43,7 @@ import AssignHomeworkModal from "../components/dashboard/AssignHomeworkModal";
 import ScheduleSessionModal from "../components/modals/ScheduleSessionModal";
 import UpdateSessionStatusModal from "../components/modals/UpdateSessionStatusModal";
 import AddLessonModal from "../components/modals/AddLessonModal";
+import ViewSessionModal from "../components/modals/ViewSessionModal";
 import AddMaterialModal from "../components/modals/AddMaterialModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import ImageViewerModal from "../components/modals/ImageViewerModal";
@@ -57,7 +59,15 @@ export default function Classroom() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [evaluatingId, setEvaluatingId] = useState(null);
+  const [activeSolvingBoardId, setActiveSolvingBoardId] = useState(null);
   const [evaluatingHomework, setEvaluatingHomework] = useState(null);
   const [feedbackText, setFeedbackText] = useState("");
   const [score, setScore] = useState(0);
@@ -69,6 +79,7 @@ export default function Classroom() {
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
   const [updatingSession, setUpdatingSession] = useState(null);
+  const [viewingSessionId, setViewingSessionId] = useState(null);
   const [editingLesson, setEditingLesson] = useState(null);
   const [editingHomework, setEditingHomework] = useState(null);
   const [editingMaterial, setEditingMaterial] = useState(null);
@@ -313,8 +324,7 @@ export default function Classroom() {
           status: s.status ? s.status.toLowerCase() : ""
         }));
 
-        const now = new Date();
-        const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const todayStr = new Date(currentTime.getTime() - currentTime.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         const getEffectiveDate = (s) => s.rescheduledDate ? s.rescheduledDate.split('T')[0] : (s.date ? s.date.split('T')[0] : "");
 
         const liveSessions = normalizedSessions.filter(
@@ -328,15 +338,42 @@ export default function Classroom() {
           (["scheduled", "postponed", "preponed"].includes(s.status) && getEffectiveDate(s) < todayStr)
         );
 
-        const renderSessionCard = (session) => (
+        const getUpcomingTimeInfo = (s) => {
+          if (!["scheduled", "postponed", "preponed"].includes(s.status)) return null;
+          const targetDate = s.rescheduledDate ? s.rescheduledDate.split('T')[0] : (s.date ? s.date.split('T')[0] : null);
+          const targetTime = s.rescheduledStart || s.startTime;
+          if (!targetDate || !targetTime) return null;
+          const sDateTime = new Date(`${targetDate}T${targetTime}:00`);
+          const diffMs = sDateTime - currentTime;
+          
+          if (diffMs > 0 && diffMs < 7 * 24 * 60 * 60 * 1000) {
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (days > 0) return `Starts in ${days}d ${hrs}h`;
+            if (hrs > 0) return `Starts in ${hrs}h ${mins}m`;
+            return `Starts in ${mins}m`;
+          } else if (diffMs <= 0 && diffMs > -60 * 60 * 1000) {
+             return "Just started";
+          }
+          return null;
+        };
+
+        const renderSessionCard = (session) => {
+          const upcomingText = getUpcomingTimeInfo(session);
+          
+          return (
           <div
             key={session.id}
-            className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 group relative"
+            onClick={() => setViewingSessionId(session.id)}
+            className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 group relative cursor-pointer hover:border-emerald-500/50 transition-colors"
           >
             {isTrainer && (
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setUpdatingSession(session);
                     setIsUpdateStatusModalOpen(true);
                   }}
@@ -346,7 +383,8 @@ export default function Classroom() {
                   <CheckSquare className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setEditingSession(session);
                     setIsScheduleModalOpen(true);
                   }}
@@ -355,7 +393,8 @@ export default function Classroom() {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setConfirmation({
                       isOpen: true,
                       title: "Cancel Session",
@@ -438,6 +477,11 @@ export default function Classroom() {
                 <span>
                   {session.startTime} - {session.endTime}
                 </span>
+                {upcomingText && (
+                  <span className="ml-2 px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {upcomingText}
+                  </span>
+                )}
               </div>
 
               {session.status === "cancelled" && session.cancellationReason && (
@@ -560,6 +604,7 @@ export default function Classroom() {
             )}
           </div>
         );
+      };
 
         return (
           <div className="space-y-10">
@@ -644,6 +689,7 @@ export default function Classroom() {
               {classroom.homework.map((hw) => (
                 <div
                   key={hw.id}
+                  id={`homework-${hw.id}`}
                   className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden"
                 >
                   <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
@@ -760,47 +806,28 @@ export default function Classroom() {
                             {hw.challenge.description}
                           </p>
                         )}
-                        <InteractiveBoard
-                          id={`board-${hw.id}`}
-                          initialFen={hw.challenge.fen}
-                          winningMoves={hw.challenge.winningMoves}
-                          isTrainer={isTrainer}
-                          classroomId={classroom.id}
-                          studentName={user?.name || "Student"}
-                          onSuccess={() => {
-                            if (!isTrainer && hw.status?.toLowerCase() === "assigned") {
-                              dispatch(
-                                submitHomework({
-                                  classroomId: classroom.id,
-                                  homeworkId: hw.id,
-                                  submission:
-                                    hw.challenge.winningMoves.join(","),
-                                }),
-                              );
-                            }
-                          }}
-                        />
-
-                        {!isTrainer &&
-                          hw.status?.toLowerCase() === "assigned" &&
-                          hw.challenge.winningMoves.length === 0 && (
-                            <div className="mt-6 flex justify-end">
-                              <button
-                                onClick={() =>
-                                  dispatch(
-                                    submitHomework({
-                                      classroomId: classroom.id,
-                                      homeworkId: hw.id,
-                                      submission: "Position explored.",
-                                    }),
-                                  )
-                                }
-                                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors"
-                              >
-                                Mark as Completed
-                              </button>
-                            </div>
-                          )}
+                        {isTrainer ? (
+                          <InteractiveBoard
+                            id={`board-${hw.id}`}
+                            initialFen={hw.challenge.fen}
+                            winningMoves={hw.challenge.winningMoves}
+                            targetOrientation={hw.challenge.orientation}
+                            isTrainer={isTrainer}
+                            classroomId={classroom.id}
+                            studentName={user?.name || "Student"}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-8 bg-slate-900 border border-slate-700 rounded-xl">
+                            <LayoutGrid className="w-16 h-16 text-slate-500 mb-4 opacity-50" />
+                            <h4 className="text-slate-300 font-medium mb-6 text-center">Interactive Chess Puzzle</h4>
+                            <button
+                              onClick={() => setActiveSolvingBoardId(hw.id)}
+                              className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 text-lg"
+                            >
+                              Start solving this
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1191,6 +1218,21 @@ export default function Classroom() {
       <div className="mt-8">{renderContent()}</div>
 
       <AnimatePresence>
+        {viewingSessionId && (
+          <ViewSessionModal
+            classroomId={classroom.id}
+            sessionId={viewingSessionId}
+            onClose={() => setViewingSessionId(null)}
+            onImageClick={(src) => setViewerImage(src)}
+            onHomeworkClick={(hwId) => {
+              setSearchParams({ tab: "homework" });
+              setTimeout(() => {
+                const el = document.getElementById(`homework-${hwId}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 300);
+            }}
+          />
+        )}
         {isAssignModalOpen && (
           <AssignHomeworkModal
             key="assign-modal"
@@ -1415,6 +1457,75 @@ export default function Classroom() {
           homework={evaluatingHomework}
           onSubmit={handleModalEvaluate}
         />
+
+        {/* Active Solving Board Modal */}
+        {activeSolvingBoardId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between pl-4 pr-1 top-0 left-0 w-full mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                  <LayoutGrid className="w-6 h-6 text-emerald-400" />
+                  Homework Puzzle
+                </h3>
+                <button
+                  autoFocus
+                  onClick={() => setActiveSolvingBoardId(null)}
+                  className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full transition-colors flex items-center justify-center -mr-2"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {(() => {
+                const hw = classroom.homework.find((h) => h.id === activeSolvingBoardId);
+                if (!hw) return null;
+                return (
+                  <div className="mt-4">
+                    {hw.challenge?.description && (
+                      <div className="mb-6 bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
+                        <p className="text-slate-200 text-lg">{hw.challenge.description}</p>
+                      </div>
+                    )}
+                    
+                    <div className="px-4">
+                      <InteractiveBoard
+                        id={`modal-board-${hw.id}`}
+                        initialFen={hw.challenge.fen}
+                        winningMoves={hw.challenge.winningMoves}
+                        targetOrientation={hw.challenge.orientation}
+                        isTrainer={false}
+                        classroomId={classroom.id}
+                        studentName={user?.name || "Student"}
+                        onSuccess={() => {
+                          if (hw.status?.toLowerCase() === "assigned") {
+                            dispatch(
+                              submitHomework({
+                                classroomId: classroom.id,
+                                homeworkId: hw.id,
+                                submission: hw.challenge.winningMoves.join(",") || "Position explored.",
+                              })
+                            );
+                            setTimeout(() => setActiveSolvingBoardId(null), 1500);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

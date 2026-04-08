@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Clock, Link as LinkIcon, Video } from "lucide-react";
+import { X, Calendar, Clock, Link as LinkIcon, Video, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { createSession, updateSessionStatus } from "../../store/classroomsSlice";
+import { createSession, updateSession } from "../../store/classroomsSlice";
 import ClockTimePicker from "../ui/ClockTimePicker";
 
 export default function ScheduleSessionModal({
@@ -11,7 +11,7 @@ export default function ScheduleSessionModal({
   session,
 }) {
   const dispatch = useDispatch();
-  const { status } = useSelector((state) => state.classrooms);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const extractDate = (dateString) => {
     if (!dateString) return "";
     try { return new Date(dateString).toISOString().split("T")[0]; } catch(e) { return dateString.split("T")[0]; }
@@ -33,42 +33,47 @@ export default function ScheduleSessionModal({
     }
   }, [session]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !date || !startTime || !endTime || !link.trim())
       return;
 
-    if (session) {
-      const updatedSession = {
-        status: session.status.toUpperCase(),
-        title,
-        date,
-        startTime,
-        endTime,
-        link,
-      };
-      dispatch(updateSessionStatus({ classroomId, sessionId: session.id, data: updatedSession }));
-    } else {
-      const newSession = {
-        title,
-        date,
-        startTime,
-        endTime,
-        link,
-      };
-      dispatch(createSession({ classroomId, sessionData: newSession }));
+    try {
+      setIsSubmitting(true);
+      if (session) {
+        const updatedSession = {
+          title,
+          date,
+          startTime,
+          endTime,
+          link,
+        };
+        await dispatch(updateSession({ classroomId, sessionId: session.id, sessionData: updatedSession })).unwrap();
+      } else {
+        const newSession = {
+          title,
+          date,
+          startTime,
+          endTime,
+          link,
+        };
+        await dispatch(createSession({ classroomId, sessionData: newSession })).unwrap();
+      }
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   return (
     <>
-      {status === "loading" && (
+      {isSubmitting && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md">
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-slate-600 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-            <p className="text-emerald-400 font-medium animate-pulse">Updating Session...</p>
+            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mb-4" />
+            <p className="text-emerald-400 font-medium animate-pulse">Saving Session...</p>
           </div>
         </div>
       )}
@@ -178,10 +183,10 @@ export default function ScheduleSessionModal({
               </button>
               <button
                 type="submit"
-                disabled={status === "loading"}
-                className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                disabled={isSubmitting}
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
               >
-                {status === "loading" ? (session ? "Updating..." : "Scheduling...") : (session ? "Update Session" : "Schedule")}
+                {isSubmitting ? "Saving..." : (session ? "Save Changes" : "Schedule Session")}
               </button>
             </div>
           </form>

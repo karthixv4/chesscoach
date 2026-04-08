@@ -13,7 +13,7 @@ export default function AddMaterialModal({ onClose, classroomId, material }) {
   const [url, setUrl] = useState(material?.url || "");
   const [size, setSize] = useState(material?.size || "");
 
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
   const [imageFiles, setImageFiles] = useState([]);
   
@@ -53,7 +53,7 @@ export default function AddMaterialModal({ onClose, classroomId, material }) {
     if (type === "image" && imagePreviews.length === 0) return;
 
     try {
-      setIsUploading(true);
+      setIsSubmitting(true);
       let finalUrl = url;
       if (type === "image") {
         let uploadedUrls = [];
@@ -73,27 +73,27 @@ export default function AddMaterialModal({ onClose, classroomId, material }) {
       };
 
       if (material) {
-        dispatch(updateMaterial({ classroomId, materialId: material.id, materialData }));
+        await dispatch(updateMaterial({ classroomId, materialId: material.id, materialData })).unwrap();
       } else {
         delete materialData.id;
-        dispatch(createMaterial({ classroomId, materialData }));
+        await dispatch(createMaterial({ classroomId, materialData })).unwrap();
       }
       onClose();
     } catch (err) {
       console.error("Material upload failed:", err);
       alert(`Upload failed: ${err.message}`);
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-      {isUploading && (
+      {isSubmitting && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md">
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-            <p className="text-emerald-400 font-medium">Uploading image...</p>
+            <p className="text-emerald-400 font-medium">Saving material...</p>
           </div>
         </div>
       )}
@@ -237,10 +237,10 @@ export default function AddMaterialModal({ onClose, classroomId, material }) {
             </button>
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={isSubmitting}
               className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
             >
-              {status === "loading" ? "Saving..." : (material ? "Update Material" : "Add Material")}
+              {isSubmitting ? "Saving..." : (material ? "Update Material" : "Add Material")}
             </button>
           </div>
         </form>
