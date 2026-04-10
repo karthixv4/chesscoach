@@ -163,24 +163,26 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                 <div className={`w-full ${isPuzzle ? 'lg:w-full' : 'lg:w-1/2'} flex flex-col gap-6`}>
                   
                   {/* Top Right: Student Evidence */}
-                  <div className="flex-1">
-                    <Carousel 
-                      images={studentImages} 
-                      currentIndex={studentIdx} 
-                      onNext={handleStudentNext} 
-                      onPrev={handleStudentPrev} 
-                      title="Student Submission"
-                    />
+                  <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 min-h-0 mb-3">
+                      <Carousel 
+                        images={studentImages} 
+                        currentIndex={studentIdx} 
+                        onNext={handleStudentNext} 
+                        onPrev={handleStudentPrev} 
+                        title="Student Submission"
+                      />
+                    </div>
                     {homework.submission && (
-                       <div className="mt-3 bg-slate-900 border border-slate-700 rounded-xl p-4">
-                         <p className="text-xs font-medium text-slate-400 uppercase mb-1">Text Submission:</p>
-                         <p className="text-sm text-slate-300">{homework.submission}</p>
+                       <div className="flex-none bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
+                         <p className="text-xs font-medium text-slate-400 uppercase mb-1 sticky top-0 bg-slate-900 pb-1">Text Submission:</p>
+                         <p className="text-sm text-slate-300 whitespace-pre-wrap">{homework.submission}</p>
                        </div>
                     )}
                   </div>
 
                   {/* Bottom Right: Grading Form */}
-                  <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+                  <div className="flex-none bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
                     <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
                       {homework?.status === 'evaluated' ? 'Edit Evaluation' : 'Grade Submission'}
                     </h3>
