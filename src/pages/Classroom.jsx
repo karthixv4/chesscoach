@@ -1078,7 +1078,7 @@ export default function Classroom() {
                           {hw.type} Challenge
                         </p>
                       </div>
-                      {hw.status?.toLowerCase() === "submitted" &&
+                      {(hw.status?.toLowerCase() === "submitted" || hw.status?.toLowerCase() === "evaluated") &&
                         isTrainer &&
                         evaluatingId !== hw.id && (
                           <button
@@ -1087,14 +1087,16 @@ export default function Classroom() {
                                 setEvaluatingHomework(hw);
                               } else {
                                 setEvaluatingId(hw.id);
+                                setScore(hw.score || 0);
+                                setFeedbackText(hw.feedback || "");
                               }
                             }}
                             className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors"
                           >
-                            Grade & Comment
+                            {hw.status?.toLowerCase() === "evaluated" ? "Edit Evaluation" : "Grade & Comment"}
                           </button>
                         )}
-                      {hw.status?.toLowerCase() === "evaluated" && (
+                      {hw.status?.toLowerCase() === "evaluated" && !isTrainer && (
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1 text-amber-400">
                             {[...Array(5)].map((_, i) => (
@@ -1107,6 +1109,19 @@ export default function Classroom() {
                           <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-medium flex items-center gap-1">
                             <Check className="w-3 h-3" /> Evaluated
                           </span>
+                        </div>
+                      )}
+                      {hw.status?.toLowerCase() === "evaluated" && isTrainer && evaluatingId !== hw.id && (
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="text-xs font-medium text-slate-400">Current Score:</span>
+                          <div className="flex items-center gap-1 text-amber-400">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={`star-display-${hw.id}-${i}`}
+                                className={`w-4 h-4 ${i < (hw.score || 0) ? "fill-current" : "text-slate-600"}`}
+                              />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

@@ -13,8 +13,8 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
     if (isOpen && homework) {
       setTrainerIdx(0);
       setStudentIdx(0);
-      setScore(0);
-      setFeedback("");
+      setScore(homework.score || 0);
+      setFeedback(homework.feedback || "");
       setIsSubmitting(false);
     }
   }, [isOpen, homework]);
@@ -182,7 +182,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                   {/* Bottom Right: Grading Form */}
                   <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
                     <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
-                      Grade Submission
+                      {homework?.status === 'evaluated' ? 'Edit Evaluation' : 'Grade Submission'}
                     </h3>
                     
                     <div className="flex items-center gap-4 mb-4">
