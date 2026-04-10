@@ -209,8 +209,19 @@ export default function Classroom() {
 
   const handlePickSubmissionImages = (hwId, files) => {
     const arr = Array.from(files);
-    setSubmissionFiles((prev) => ({ ...prev, [hwId]: arr }));
-    setSubmissionPreviews((prev) => ({ ...prev, [hwId]: arr.map((f) => URL.createObjectURL(f)) }));
+    setSubmissionFiles((prev) => ({ ...prev, [hwId]: [...(prev[hwId] || []), ...arr] }));
+    setSubmissionPreviews((prev) => ({ ...prev, [hwId]: [...(prev[hwId] || []), ...arr.map((f) => URL.createObjectURL(f))] }));
+  };
+
+  const handleRemoveSubmissionImage = (hwId, index) => {
+    setSubmissionFiles((prev) => ({
+      ...prev,
+      [hwId]: (prev[hwId] || []).filter((_, i) => i !== index),
+    }));
+    setSubmissionPreviews((prev) => ({
+      ...prev,
+      [hwId]: (prev[hwId] || []).filter((_, i) => i !== index),
+    }));
   };
 
   const renderContent = () => {
@@ -933,9 +944,16 @@ export default function Classroom() {
                               onChange={(e) => handlePickSubmissionImages(hw.id, e.target.files)}
                             />
                             {(submissionPreviews[hw.id] || []).length > 0 && (
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-3">
                                 {(submissionPreviews[hw.id] || []).map((src, i) => (
-                                  <img key={i} src={src} alt={`sub-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+                                  <div key={i} className="relative group">
+                                    <img src={src} alt={`sub-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveSubmissionImage(hw.id, i)}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >×</button>
+                                  </div>
                                 ))}
                               </div>
                             )}
