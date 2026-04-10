@@ -17,7 +17,7 @@ import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 
 export default function TrainerHome() {
-  const { classrooms, status, error } = useSelector((state) => state.classrooms);
+  const { classrooms, status, detailsStatus, error } = useSelector((state) => state.classrooms);
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -50,8 +50,46 @@ export default function TrainerHome() {
 
   if (status === "loading" && classrooms.length === 0) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <div className="w-8 h-8 border-4 border-slate-500 border-t-emerald-500 rounded-full animate-spin"></div>
+      <div className="space-y-8">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Trainer Dashboard</h1>
+            <p className="text-slate-400 mt-1">Manage your students and classrooms</p>
+          </div>
+          <div className="w-32 h-9 bg-slate-700/60 rounded-xl animate-pulse" />
+        </header>
+        {/* Stat card skeletons */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-slate-700/60 animate-pulse" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-3 w-24 bg-slate-700/60 rounded animate-pulse" />
+                  <div className="h-6 w-10 bg-slate-700/60 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Student list skeletons */}
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
+          <div className="p-6 border-b border-slate-700/50">
+            <div className="h-5 w-32 bg-slate-700/60 rounded animate-pulse" />
+          </div>
+          <div className="divide-y divide-slate-700/50">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="p-4 sm:p-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-slate-700/60 animate-pulse shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-36 bg-slate-700/60 rounded animate-pulse" />
+                  <div className="h-3 w-48 bg-slate-700/60 rounded animate-pulse" />
+                </div>
+                <div className="w-5 h-5 bg-slate-700/60 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -177,8 +215,17 @@ export default function TrainerHome() {
                   </h3>
                   <p className="text-sm text-slate-400 flex items-center gap-2">
                     <Activity className="w-3 h-3" />
-                    {(classroom.lessons || []).length} Lessons •{" "}
-                    {(classroom.homework || []).length} Assignments
+                    {detailsStatus === "loading" && !classroom.lessons ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                        <span className="text-slate-500">Loading details...</span>
+                      </span>
+                    ) : (
+                      <>
+                        {(classroom.lessons || []).length} Lessons •{" "}
+                        {(classroom.homework || []).length} Assignments
+                      </>
+                    )}
                   </p>
                 </div>
               </div>

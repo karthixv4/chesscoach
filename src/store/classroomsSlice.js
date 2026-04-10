@@ -240,6 +240,7 @@ const initialState = {
   studentSessions: [],
   activeClassroom: null,
   status: 'idle',
+  detailsStatus: 'idle', // tracks fetchClassroomDetails loading
   error: null,
 };
 
@@ -280,17 +281,23 @@ const classroomsSlice = createSlice({
       });
 
     // Fetch Details
-    builder.addCase(fetchClassroomDetails.fulfilled, (state, action) => {
-      const idx = state.classrooms.findIndex(c => c.id === action.payload.id);
-      if (idx !== -1) {
-        state.classrooms[idx] = action.payload;
-      } else {
-        state.classrooms.push(action.payload);
-      }
-      if (state.activeClassroom?.id === action.payload.id) {
-        state.activeClassroom = action.payload;
-      }
-    });
+    builder.addCase(fetchClassroomDetails.pending, (state) => { state.detailsStatus = 'loading'; })
+      .addCase(fetchClassroomDetails.fulfilled, (state, action) => {
+        state.detailsStatus = 'idle';
+        const idx = state.classrooms.findIndex(c => c.id === action.payload.id);
+        if (idx !== -1) {
+          state.classrooms[idx] = action.payload;
+        } else {
+          state.classrooms.push(action.payload);
+        }
+        if (state.activeClassroom?.id === action.payload.id) {
+          state.activeClassroom = action.payload;
+        }
+      })
+      .addCase(fetchClassroomDetails.rejected, (state, action) => {
+        state.detailsStatus = 'idle';
+        state.error = action.payload;
+      });
 
     // Create Classroom
     builder.addCase(createClassroom.fulfilled, (state, action) => {

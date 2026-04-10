@@ -56,7 +56,7 @@ export default function Classroom() {
   const activeTab = searchParams.get("tab") || "lessons";
 
   const { user } = useSelector((state) => state.auth);
-  const { classrooms, status } = useSelector((state) => state.classrooms);
+  const { classrooms, status, detailsStatus } = useSelector((state) => state.classrooms);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -115,10 +115,29 @@ export default function Classroom() {
     }
   }, [dispatch, id]);
 
-  if (status === "loading" && (!classroom || classroom.id !== id)) {
+  // Show skeleton loader when details are fetching (either overall status=loading, or detailsStatus=loading for this classroom)
+  const isLoadingDetails = detailsStatus === 'loading' && (!classroom || !classroom.lessons);
+
+  if ((status === 'loading' || detailsStatus === 'loading') && (!classroom || classroom.id !== id)) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-slate-500 border-t-emerald-500 rounded-full animate-spin"></div>
+      <div className="space-y-6">
+        {/* Tab bar skeleton */}
+        <div className="flex gap-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-9 w-24 bg-slate-700/60 rounded-xl animate-pulse" />
+          ))}
+        </div>
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-3">
+              <div className="h-3 w-24 bg-slate-700/60 rounded animate-pulse" />
+              <div className="h-5 w-40 bg-slate-700/60 rounded animate-pulse" />
+              <div className="h-3 w-full bg-slate-700/60 rounded animate-pulse" />
+              <div className="h-3 w-3/4 bg-slate-700/60 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -279,11 +298,20 @@ export default function Classroom() {
                     </p>
                   </div>
                 ))}
-                {classroom.lessons.length === 0 && (
+                {isLoadingDetails ? (
+                  [...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-3 col-span-full md:col-span-1">
+                      <div className="h-3 w-20 bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-5 w-36 bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-3 w-full bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-3 w-2/3 bg-slate-700/60 rounded animate-pulse" />
+                    </div>
+                  ))
+                ) : classroom.lessons.length === 0 ? (
                   <div className="col-span-full p-8 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
                     No lessons scheduled yet.
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 mt-8">
@@ -671,11 +699,25 @@ export default function Classroom() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {upcomingSessions.map(renderSessionCard)}
-                {upcomingSessions.length === 0 && (
+                {isLoadingDetails ? (
+                  [...Array(2)].map((_, i) => (
+                    <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-700/60 animate-pulse" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-4 w-32 bg-slate-700/60 rounded animate-pulse" />
+                          <div className="h-3 w-24 bg-slate-700/60 rounded animate-pulse" />
+                        </div>
+                      </div>
+                      <div className="h-3 w-28 bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-9 w-full bg-slate-700/60 rounded-xl animate-pulse" />
+                    </div>
+                  ))
+                ) : upcomingSessions.length === 0 ? (
                   <div className="col-span-full p-8 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
                     No upcoming sessions scheduled.
                   </div>
-                )}
+                ) : null}
               </div>
             </section>
 
@@ -691,12 +733,17 @@ export default function Classroom() {
               </section>
             )}
 
-            {classroom.sessions.length === 0 && (
+            {isLoadingDetails ? (
+              <div className="p-12 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
+                <div className="w-12 h-12 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-sm">Loading sessions...</p>
+              </div>
+            ) : classroom.sessions.length === 0 ? (
               <div className="p-12 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
                 <Calendar className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p>No sessions found.</p>
               </div>
-            )}
+            ) : null}
           </div>
         );
 
@@ -918,11 +965,28 @@ export default function Classroom() {
                   </div>
                 </div>
               ))}
-              {classroom.homework.length === 0 && (
+              {isLoadingDetails ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+                    <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
+                      <div className="space-y-2">
+                        <div className="h-5 w-40 bg-slate-700/60 rounded animate-pulse" />
+                        <div className="h-3 w-28 bg-slate-700/60 rounded animate-pulse" />
+                      </div>
+                      <div className="w-20 h-8 bg-slate-700/60 rounded-xl animate-pulse" />
+                    </div>
+                    <div className="p-6 space-y-3">
+                      <div className="h-3 w-full bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-3 w-3/4 bg-slate-700/60 rounded animate-pulse" />
+                      <div className="h-3 w-1/2 bg-slate-700/60 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))
+              ) : classroom.homework.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
                   No homework assigned yet.
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         );
