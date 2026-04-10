@@ -21,7 +21,24 @@ export default function ScheduleSessionModal({
   const [date, setDate] = useState(extractDate(session?.date) || "");
   const [startTime, setStartTime] = useState(session?.startTime || "");
   const [endTime, setEndTime] = useState(session?.endTime || "");
+  const [endTimeLocked, setEndTimeLocked] = useState(true);
   const [link, setLink] = useState(session?.link || "");
+
+  const calcEndTime = (start) => {
+    if (!start) return "";
+    const [h, m] = start.split(":").map(Number);
+    const totalMins = h * 60 + m + 60;
+    const endH = Math.floor(totalMins / 60) % 24;
+    const endM = totalMins % 60;
+    return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+  };
+
+  const handleStartTimeChange = (val) => {
+    setStartTime(val);
+    if (endTimeLocked) {
+      setEndTime(calcEndTime(val));
+    }
+  };
 
   useEffect(() => {
     if (session) {
@@ -133,25 +150,39 @@ export default function ScheduleSessionModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1.5">
                   Start Time
                 </label>
                 <ClockTimePicker
                   value={startTime}
-                  onChange={setStartTime}
+                  onChange={handleStartTimeChange}
                   placeholder="Select time"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                  End Time
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-sm font-medium text-slate-400">
+                    End Time
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEndTimeLocked(l => !l)}
+                    className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                      endTimeLocked
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        : 'bg-slate-700 border-slate-600 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {endTimeLocked ? '🔒 Auto (1 hr)' : '✏️ Manual'}
+                  </button>
+                </div>
                 <ClockTimePicker
                   value={endTime}
                   onChange={setEndTime}
                   placeholder="Select time"
+                  disabled={endTimeLocked}
                 />
               </div>
             </div>

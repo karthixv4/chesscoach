@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
 
-export default function ClockTimePicker({ value, onChange, placeholder }) {
+export default function ClockTimePicker({ value, onChange, placeholder, disabled }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState('hour'); // 'hour' | 'minute'
   const [hour, setHour] = useState(12);
@@ -92,9 +92,14 @@ export default function ClockTimePicker({ value, onChange, placeholder }) {
   return (
     <>
       <div 
-        className="relative w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white cursor-pointer hover:border-emerald-500 transition-colors flex items-center"
+        className={`relative w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-2 text-white transition-colors flex items-center ${
+          disabled
+            ? 'border-slate-700/50 opacity-50 cursor-not-allowed'
+            : 'border-slate-700 cursor-pointer hover:border-emerald-500'
+        }`}
         style={{ minHeight: '42px' }}
         onClick={() => {
+          if (disabled) return;
           setMode('hour');
           setIsOpen(true);
         }}

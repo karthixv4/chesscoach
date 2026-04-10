@@ -1021,6 +1021,44 @@ export default function Classroom() {
                           </div>
                         </div>
                       )}
+
+                    {/* Evaluation Report – visible to students */}
+                    {!isTrainer && hw.status?.toLowerCase() === "submitted" && (
+                      <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                          <p className="text-sm font-semibold text-amber-400">Awaiting Evaluation</p>
+                        </div>
+                        <p className="text-sm text-slate-400">Your trainer will review and grade your submission soon.</p>
+                      </div>
+                    )}
+
+                    {!isTrainer && hw.status?.toLowerCase() === "evaluated" && (
+                      <div className="mt-6 bg-slate-900/50 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <p className="text-sm font-semibold text-emerald-400">Trainer Evaluation</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-5 h-5 ${i < (hw.score || 0) ? 'text-amber-400 fill-current' : 'text-slate-600'}`}
+                              />
+                            ))}
+                            <span className="ml-2 text-sm font-bold text-amber-400">{hw.score}/5</span>
+                          </div>
+                        </div>
+                        {hw.feedback && (
+                          <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
+                            <p className="text-xs font-medium text-slate-400 uppercase mb-2">Trainer Feedback</p>
+                            <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">{hw.feedback}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   </div>
                 </div>
               ))}
