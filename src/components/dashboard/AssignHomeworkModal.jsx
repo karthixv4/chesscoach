@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { X, Upload, LayoutGrid, RotateCcw, Users, ImagePlus, Loader2, Calendar } from "lucide-react";
+import { X, Upload, LayoutGrid, RotateCcw, Users, ImagePlus, Loader2, Calendar, Link as LinkIcon, Plus, Trash2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { createHomework, updateHomework } from "../../store/classroomsSlice";
 import { uploadImages } from "../../lib/cloudinaryService";
@@ -20,6 +20,7 @@ export default function AssignHomeworkModal({
   const resolveInitialType = (backendType) => {
     if (!backendType) return "worksheet";
     const t = backendType.toLowerCase();
+    if (t === "puzzle") return "puzzle";
     if (t === "image" || t === "worksheet") return "worksheet";
     return "board";
   };
@@ -42,6 +43,25 @@ export default function AssignHomeworkModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Puzzle specific
+  const [puzzleSets, setPuzzleSets] = useState(
+    homework?.puzzleSets || []
+  );
+
+  const addPuzzleSet = () => {
+    setPuzzleSets([...puzzleSets, { link: "", expectedCount: 10, instruction: "" }]);
+  };
+
+  const updatePuzzleSet = (index, field, value) => {
+    const updated = [...puzzleSets];
+    updated[index][field] = field === 'expectedCount' ? parseInt(value) || 0 : value;
+    setPuzzleSets(updated);
+  };
+
+  const removePuzzleSet = (index) => {
+    setPuzzleSets(puzzleSets.filter((_, i) => i !== index));
+  };
+
   // Board specific
   const [game, setGame] = useState(
     new Chess(homework?.challenge?.fen || undefined),
@@ -62,6 +82,7 @@ export default function AssignHomeworkModal({
       setImagePreviews(homework.imageUrls || []);
       setImageFiles([]);
       setDueDate(homework.dueDate ? new Date(homework.dueDate).toISOString().split('T')[0] : "");
+      setPuzzleSets(homework.puzzleSets || []);
       if (homework.challenge) {
         setFen(homework.challenge.fen);
         setWinningMoves(homework.challenge.winningMoves || []);
@@ -190,8 +211,8 @@ export default function AssignHomeworkModal({
       }
       const imageUrls = [...existingUrls, ...freshUrls];
 
-      // Map UI types to backend enum: BOARD | TEXT | VIDEO | IMAGE
-      const typeMap = { board: "BOARD", worksheet: "IMAGE" };
+      // Map UI types to backend enum: BOARD | TEXT | VIDEO | IMAGE | PUZZLE
+      const typeMap = { board: "BOARD", worksheet: "IMAGE", puzzle: "PUZZLE" };
       const backendType = typeMap[type] || "IMAGE";
 
       const homeworkData = {
@@ -203,7 +224,10 @@ export default function AssignHomeworkModal({
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       };
 
-      if (type === "worksheet") {
+      if (type === "puzzle") {
+        homeworkData.puzzleSets = puzzleSets.filter(ps => ps.link.trim() !== "");
+        homeworkData.description = description;
+      } else if (type === "worksheet") {
         homeworkData.description = description;
         homeworkData.fileUrl = fileUrl || "#";
       } else {
@@ -347,7 +371,7 @@ export default function AssignHomeworkModal({
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Homework Type
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setType("worksheet")}
@@ -358,7 +382,7 @@ export default function AssignHomeworkModal({
                   }`}
                 >
                   <Upload className="w-6 h-6 mb-2" />
-                  <span className="font-medium">Worksheet Upload</span>
+                  <span className="font-medium text-sm text-center">Worksheet</span>
                 </button>
                 <button
                   type="button"
@@ -370,7 +394,19 @@ export default function AssignHomeworkModal({
                   }`}
                 >
                   <LayoutGrid className="w-6 h-6 mb-2" />
-                  <span className="font-medium">Interactive Board</span>
+                  <span className="font-medium text-sm text-center">Board</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("puzzle")}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${
+                    type === "puzzle"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                      : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  <LinkIcon className="w-6 h-6 mb-2" />
+                  <span className="font-medium text-sm text-center">Puzzles</span>
                 </button>
               </div>
             </div>
@@ -387,7 +423,78 @@ export default function AssignHomeworkModal({
               />
             </div>
 
-            {type === "worksheet" ? (
+            {type === "puzzle" ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-300">
+                    Puzzle Sets
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addPuzzleSet}
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> Add Link
+                  </button>
+                </div>
+                
+                {puzzleSets.length === 0 ? (
+                  <div className="text-center p-6 border border-dashed border-slate-700 rounded-xl text-slate-500">
+                    Click "Add Link" to assign puzzles.
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                    {puzzleSets.map((ps, index) => (
+                      <div key={index} className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-4 relative group">
+                        <button
+                          type="button"
+                          onClick={() => removePuzzleSet(index)}
+                          className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Puzzle Link</label>
+                          <input
+                            type="url"
+                            required
+                            value={ps.link}
+                            onChange={(e) => updatePuzzleSet(index, 'link', e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                            placeholder="https://lichess.org/training/tactics"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-1">
+                            <label className="block text-xs font-medium text-slate-400 mb-1">No. Puzzles</label>
+                            <input
+                              type="number"
+                              required
+                              min="1"
+                              value={ps.expectedCount}
+                              onChange={(e) => updatePuzzleSet(index, 'expectedCount', e.target.value)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-slate-400 mb-1">Remarks / Instructions</label>
+                            <input
+                              type="text"
+                              value={ps.instruction}
+                              onChange={(e) => updatePuzzleSet(index, 'instruction', e.target.value)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                              placeholder="e.g. Focus on endgames"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : type === "worksheet" ? (
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
                   File URL

@@ -19,10 +19,24 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
     }
   }, [isOpen, homework]);
 
-  // Flatten the arrays just in case they are comma separated strings
   const trainerImages = homework?.imageUrls ? homework.imageUrls.flatMap(u => (typeof u === 'string' ? u.split(',') : [])).filter(Boolean) : [];
   const studentImages = homework?.submissionImageUrls ? homework.submissionImageUrls.flatMap(u => (typeof u === 'string' ? u.split(',') : [])).filter(Boolean) : [];
 
+  const isPuzzle = homework?.type?.toLowerCase() === 'puzzle';
+  const hasFileUrl = homework?.fileUrl && homework.fileUrl !== "#";
+
+  const getEmbeddableUrl = (url) => {
+    if (!url) return url;
+    if (url.includes('drive.google.com/file/d/')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    }
+    return url;
+  };
+
+  const embedUrl = hasFileUrl ? getEmbeddableUrl(homework.fileUrl) : "";
   const handleTrainerNext = () => setTrainerIdx(i => (i + 1) % trainerImages.length);
   const handleTrainerPrev = () => setTrainerIdx(i => (i - 1 + trainerImages.length) % trainerImages.length);
 
@@ -89,7 +103,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="bg-slate-800 rounded-3xl border border-slate-700 shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+            className={`bg-slate-800 rounded-3xl border border-slate-700 shadow-2xl w-full ${isPuzzle ? 'max-w-xl' : 'max-w-6xl'} max-h-[90vh] flex flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -111,20 +125,42 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
               <div className="flex flex-col lg:flex-row gap-6 h-full min-h-[500px]">
                 
                 {/* Left Side: Trainer's Assignment */}
-                <div className="w-full lg:w-1/2 flex flex-col">
-                  <div className="flex-1">
-                    <Carousel 
-                      images={trainerImages} 
-                      currentIndex={trainerIdx} 
-                      onNext={handleTrainerNext} 
-                      onPrev={handleTrainerPrev} 
-                      title="Assignment Reference"
-                    />
+                {!isPuzzle && (
+                  <div className="w-full lg:w-1/2 flex flex-col">
+                    <div className="flex-1 flex flex-col h-full">
+                      {hasFileUrl ? (
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                              Assignment Reference
+                            </h3>
+                            <a href={homework.fileUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors rounded-lg border border-slate-600/50 shadow-sm">Open in New Tab</a>
+                          </div>
+                          <div className="flex-1 min-h-[400px] w-full rounded-2xl border-2 border-slate-700/50 bg-slate-900 flex flex-col overflow-hidden">
+                            <div className="flex-1 flex flex-col bg-slate-800 relative">
+                              <iframe 
+                                src={embedUrl} 
+                                className="w-full h-full bg-slate-200 flex-1 border-0" 
+                                title="Assignment Work" 
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <Carousel 
+                          images={trainerImages} 
+                          currentIndex={trainerIdx} 
+                          onNext={handleTrainerNext} 
+                          onPrev={handleTrainerPrev} 
+                          title="Assignment Reference"
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Right Side: Student Submission & Evaluation */}
-                <div className="w-full lg:w-1/2 flex flex-col gap-6">
+                <div className={`w-full ${isPuzzle ? 'lg:w-full' : 'lg:w-1/2'} flex flex-col gap-6`}>
                   
                   {/* Top Right: Student Evidence */}
                   <div className="flex-1">

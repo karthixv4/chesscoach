@@ -50,6 +50,35 @@ import ConfirmationModal from "../components/modals/ConfirmationModal";
 import ImageViewerModal from "../components/modals/ImageViewerModal";
 import WorksheetEvaluationModal from "../components/modals/WorksheetEvaluationModal";
 
+const PDFViewer = ({ fileUrl }) => {
+  const getEmbeddableUrl = (url) => {
+    if (!url) return url;
+    if (url.includes('drive.google.com/file/d/')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    }
+    return url;
+  };
+  const embedUrl = getEmbeddableUrl(fileUrl);
+  return (
+    <div className="flex-1 min-h-[500px] w-full rounded-2xl border-2 border-slate-700/50 bg-slate-900 flex flex-col overflow-hidden mb-6 mt-4">
+      <div className="p-4 border-b border-slate-700/80 bg-slate-900 flex justify-between items-center px-6">
+        <h4 className="font-medium text-slate-300">Assignment Document</h4>
+        <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors rounded-lg border border-slate-600/50">Open in New Tab</a>
+      </div>
+      <div className="flex-1 flex flex-col bg-slate-800 relative min-h-[500px]">
+        <iframe 
+          src={embedUrl} 
+          className="w-full h-full bg-slate-200 border-0 flex-1" 
+          title="Assignment Work" 
+        />
+      </div>
+    </div>
+  );
+};
+
 export default function Classroom() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -864,28 +893,40 @@ export default function Classroom() {
                     )}
 
                     {(hw.type?.toLowerCase() === "image" || hw.type?.toLowerCase() === "worksheet") && hw.fileUrl && hw.fileUrl !== "#" && (
-                      <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-emerald-400" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-slate-200">
-                              Worksheet Document
-                            </h4>
-                            <p className="text-sm text-slate-400">
-                              Download and complete the exercises.
-                            </p>
-                          </div>
+                      <PDFViewer fileUrl={hw.fileUrl} />
+                    )}
+
+                    {hw.type?.toLowerCase() === "puzzle" && hw.puzzleSets && hw.puzzleSets.length > 0 && (
+                      <div className="space-y-4">
+                        <p className="text-slate-300 font-medium">Please solve the following puzzle sets:</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {hw.puzzleSets.map((ps, index) => (
+                            <a
+                              key={index}
+                              href={ps.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-900/50 border border-slate-700 hover:border-emerald-500 hover:bg-slate-800 transition-all rounded-xl p-4 group flex flex-col h-full"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0">
+                                  <LinkIcon className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                </div>
+                                <h4 className="font-semibold text-slate-200 line-clamp-1 break-all" title={ps.link}>{ps.link}</h4>
+                              </div>
+                              <div className="flex justify-between items-center text-sm text-slate-400 mb-2">
+                                <span className="bg-slate-800 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-300 border border-slate-700 shadow-sm">
+                                  Target: {ps.expectedCount} puzzles
+                                </span>
+                              </div>
+                              {ps.instruction && (
+                                <p className="text-sm text-slate-500 italic mt-auto line-clamp-2">
+                                  "{ps.instruction}"
+                                </p>
+                              )}
+                            </a>
+                          ))}
                         </div>
-                        <a
-                          href={hw.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Download PDF
-                        </a>
                       </div>
                     )}
 

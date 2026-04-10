@@ -240,6 +240,20 @@ export default function StudentHome() {
     return null;
   };
 
+  const getDueTimeInfo = (hw) => {
+    if (!hw.dueDate) return null;
+    const endOfDay = new Date(hw.dueDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    const diffMs = endOfDay - currentTime;
+    if (diffMs >= 0) {
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (days === 0) return "Due today";
+      if (days === 1) return "Due in 1 day";
+      return `Due in ${days} days`;
+    }
+    return "Overdue";
+  };
+
   const getGoogleCalendarUrl = (session) => {
     const targetDateStr = session.rescheduledDate
       ? session.rescheduledDate.split("T")[0]
@@ -677,26 +691,43 @@ export default function StudentHome() {
                   ) : pendingHomework.length === 0 ? (
                     <div className="p-6 text-center text-slate-400">All caught up!</div>
                   ) : (
-                    pendingHomework.map((hw, i) => (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        key={hw.id}
-                        onClick={() =>
-                          navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`)
-                        }
-                        className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group"
-                      >
-                        <div>
-                          <h3 className="font-medium text-lg group-hover:text-blue-400 transition-colors">
-                            {hw.title}
-                          </h3>
-                          <p className="text-sm text-slate-400 capitalize">{hw.type} Challenge</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                      </motion.div>
-                    ))
+                    pendingHomework.map((hw, i) => {
+                      const dueText = getDueTimeInfo(hw);
+                      return (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          key={hw.id}
+                          onClick={() =>
+                            navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`)
+                          }
+                          className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group flex-wrap gap-4"
+                        >
+                          <div>
+                            <h3 className="font-medium text-lg group-hover:text-blue-400 transition-colors">
+                              {hw.title}
+                            </h3>
+                            <div className="flex items-center flex-wrap gap-3 mt-2">
+                              <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize">
+                                <FileText className="w-4 h-4" />
+                                {hw.type} Challenge
+                              </p>
+                              {dueText && (
+                                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1 ${
+                                  dueText === "Overdue" 
+                                    ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                                    : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                }`}>
+                                  <Clock className="w-3 h-3" /> {dueText}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                        </motion.div>
+                      );
+                    })
                   )}
                 </div>
               </div>
