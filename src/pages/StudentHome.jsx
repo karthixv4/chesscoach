@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchClassrooms, fetchStudentSessions, fetchClassroomDetails } from "../store/classroomsSlice";
+import { fetchDailyLogs } from "../store/dailyLogsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, CheckCircle, Clock, ChevronRight, Calendar, FileText,
   CalendarPlus, History, Video, CheckSquare, XCircle, Star,
+  Flame, PlusCircle,
 } from "lucide-react";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
+import DailyLogForm from "../components/dashboard/DailyLogForm";
+import PracticeStreak from "../components/dashboard/PracticeStreak";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -32,6 +36,7 @@ export default function StudentHome() {
   const { classrooms, status, detailsStatus, studentSessions } = useSelector(
     (state) => state.classrooms
   );
+  const { logs, todayLog } = useSelector((state) => state.dailyLogs);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [dailyPuzzle, setDailyPuzzle] = useState(null);
@@ -42,6 +47,7 @@ export default function StudentHome() {
   // Sub-tab inside the sessions tab: "upcoming" | "past"
   const [sessionSubTab, setSessionSubTab] = useState("upcoming");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showLogModal, setShowLogModal] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -53,6 +59,7 @@ export default function StudentHome() {
     { id: "homework", label: "Homework", icon: FileText },
     { id: "submitted", label: "Submitted", icon: CheckCircle },
     { id: "progress", label: "Progress", icon: BookOpen },
+    { id: "practice", label: "Practice", icon: Flame },
   ];
 
   // ── Daily puzzle ────────────────────────────────────────────────────────────
@@ -93,6 +100,15 @@ export default function StudentHome() {
   useEffect(() => {
     if (classroom?.id && !classroom.homework) {
       dispatch(fetchClassroomDetails(classroom.id));
+    }
+    if (classroom?.id) {
+      // Fetch last 35 days of logs so PracticeStreak has full data
+      const from = new Date();
+      from.setDate(from.getDate() - 35);
+      const fromStr = new Date(from.getTime() - from.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      dispatch(fetchDailyLogs({ classroomId: classroom.id, params: { from: fromStr } }));
     }
   }, [dispatch, classroom?.id, classroom?.homework]);
 
@@ -429,20 +445,53 @@ export default function StudentHome() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8">
-      <header className="flex items-center justify-between">
+      {/* Daily Log Modal */}
+      <AnimatePresence>
+        {showLogModal && (
+          <DailyLogForm
+            classroomId={classroom.id}
+            todayLog={todayLog}
+            onClose={() => setShowLogModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
             Welcome, {user?.name.split(" ")[0]}
+            {todayLog && (
+              <span className="text-sm font-medium px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5" /> Logged today
+              </span>
+            )}
           </h1>
           <p className="text-slate-400 mt-1">Ready for your next chess lesson?</p>
         </div>
-        <button
-          onClick={() => navigate(`/classroom/${classroom.id}`)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
-        >
-          Enter Classroom
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            id="log-today-btn"
+            onClick={() => setShowLogModal(true)}
+            className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${
+              todayLog
+                ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                : "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/20"
+            }`}
+          >
+            {todayLog ? (
+              <><Flame className="w-4 h-4" /> Edit Log</>
+            ) : (
+              <><PlusCircle className="w-4 h-4" /> Log Today</>
+            )}
+          </button>
+          <button
+            onClick={() => navigate(`/classroom/${classroom.id}`)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm"
+          >
+            Enter Classroom
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </header>
 
       {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
@@ -799,6 +848,43 @@ export default function StudentHome() {
                 </div>
                 <div className="p-6">
                   <ProgressTracker homework={classroom.homework || []} />
+                </div>
+              </div>
+            )}
+
+            {/* ── Practice tab ─────────────────────────────────────────────── */}
+            {activeTab === "practice" && (
+              <div className="space-y-6">
+                {/* Quick-log CTA */}
+                <div
+                  onClick={() => setShowLogModal(true)}
+                  className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${
+                    todayLog
+                      ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                      : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold text-white">
+                      {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-0.5">
+                      {todayLog
+                        ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
+                        : "Tap to log your practice — takes under 1 minute"}
+                    </p>
+                  </div>
+                  {todayLog ? (
+                    <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
+                  ) : (
+                    <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
+                  )}
+                </div>
+
+                {/* Streak + dot matrix */}
+                <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6">
+                  <h2 className="text-lg font-semibold mb-5">Your Streak</h2>
+                  <PracticeStreak logs={logs} streak={todayLog?.streak ?? 0} />
                 </div>
               </div>
             )}
