@@ -94,42 +94,6 @@ export const fetchStudentSessions = createAsyncThunk('sessions/fetchByStudent', 
   }
 });
 
-// Lessons
-export const createLesson = createAsyncThunk('lessons/create', async ({ classroomId, lessonData }, { rejectWithValue }) => {
-  try {
-    const res = await api.post(`/classrooms/${classroomId}/lessons`, lessonData);
-    return { classroomId, lesson: res.data };
-  } catch (error) {
-    return rejectWithValue(error.response?.data?.error || 'Failed to create lesson');
-  }
-});
-
-export const updateLesson = createAsyncThunk('lessons/update', async ({ classroomId, lessonId, lessonData }, { rejectWithValue }) => {
-  try {
-    const res = await api.patch(`/classrooms/${classroomId}/lessons/${lessonId}`, lessonData);
-    return { classroomId, lesson: res.data };
-  } catch (error) {
-    return rejectWithValue(error.response?.data?.error || 'Failed to update lesson');
-  }
-});
-
-export const deleteLesson = createAsyncThunk('lessons/delete', async ({ classroomId, lessonId }, { rejectWithValue }) => {
-  try {
-    await api.delete(`/classrooms/${classroomId}/lessons/${lessonId}`);
-    return { classroomId, lessonId };
-  } catch (error) {
-    return rejectWithValue(error.response?.data?.error || 'Failed to delete lesson');
-  }
-});
-
-export const markLessonRead = createAsyncThunk('lessons/markRead', async ({ classroomId, lessonId }, { rejectWithValue }) => {
-  try {
-    const res = await api.patch(`/classrooms/${classroomId}/lessons/${lessonId}/read`);
-    return { classroomId, lesson: res.data };
-  } catch (error) {
-    return rejectWithValue(error.response?.data?.error || 'Failed to mark lesson read');
-  }
-});
 
 // Homework
 export const createHomework = createAsyncThunk('homework/create', async ({ classroomId, homeworkData }, { rejectWithValue }) => {
@@ -348,29 +312,6 @@ const classroomsSlice = createSlice({
       state.studentSessions = action.payload;
     });
 
-    // Lessons
-    builder.addCase(createLesson.fulfilled, (state, action) => {
-      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        c.lessons.push(action.payload.lesson);
-      });
-    });
-    builder.addCase(updateLesson.fulfilled, (state, action) => {
-      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        const idx = c.lessons.findIndex(l => l.id === action.payload.lesson.id);
-        if (idx !== -1) c.lessons[idx] = action.payload.lesson;
-      });
-    });
-    builder.addCase(deleteLesson.fulfilled, (state, action) => {
-      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        c.lessons = c.lessons.filter(l => l.id !== action.payload.lessonId);
-      });
-    });
-    builder.addCase(markLessonRead.fulfilled, (state, action) => {
-      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        const idx = c.lessons.findIndex(l => l.id === action.payload.lesson.id);
-        if (idx !== -1) c.lessons[idx] = action.payload.lesson;
-      });
-    });
 
     // Homework
     builder.addCase(createHomework.fulfilled, (state, action) => {

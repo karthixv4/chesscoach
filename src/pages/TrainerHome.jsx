@@ -6,8 +6,8 @@ import { fetchInactiveStudents } from "../store/dailyLogsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, ChevronRight, Activity, BookOpen, CheckCircle,
-  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock,
+  Users, ChevronRight, Activity, CheckCircle,
+  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar,
 } from "lucide-react";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
@@ -72,7 +72,7 @@ export default function TrainerHome() {
     dispatch(fetchClassrooms()).then((action) => {
       if (action.meta.requestStatus === "fulfilled" && Array.isArray(action.payload)) {
         action.payload.forEach((c) => {
-          if (!c.homework || !c.lessons) dispatch(fetchClassroomDetails(c.id));
+          if (!c.homework) dispatch(fetchClassroomDetails(c.id));
         });
       }
     });
@@ -225,16 +225,16 @@ export default function TrainerHome() {
           </div>
         </div>
 
-        {/* Total lessons */}
+        {/* Total Sessions */}
         <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-purple-500/10 rounded-xl">
-              <BookOpen className="w-6 h-6 text-purple-400" />
+              <Calendar className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400 font-medium">Total Lessons</p>
+              <p className="text-sm text-slate-400 font-medium">Total Sessions</p>
               <p className="text-2xl font-semibold">
-                {classrooms.reduce((acc, c) => acc + (c.lessons || []).length, 0)}
+                {classrooms.reduce((acc, c) => acc + (c.sessions || []).length, 0)}
               </p>
             </div>
           </div>
@@ -320,16 +320,13 @@ export default function TrainerHome() {
                     </div>
                     <p className="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
                       <Activity className="w-3 h-3" />
-                      {detailsStatus === "loading" && !classroom.lessons ? (
+                      {detailsStatus === "loading" && !classroom.homework ? (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
                           <span className="text-slate-500">Loading…</span>
                         </span>
                       ) : (
-                        <>
-                          {(classroom.lessons || []).length} Lessons ·{" "}
-                          {(classroom.homework || []).length} Assignments
-                        </>
+                        <>{(classroom.homework || []).length} Assignments</>
                       )}
                     </p>
                   </div>

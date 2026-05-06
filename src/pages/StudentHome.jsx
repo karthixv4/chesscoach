@@ -15,6 +15,28 @@ import PracticeStreak from "../components/dashboard/PracticeStreak";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
+// ── Compute current streak from a sorted (desc) logs array ──────────────────
+function computeStreak(logs = []) {
+  if (!logs.length) return 0;
+  let streak = 0;
+  // Start cursor at today (UTC midnight)
+  let cursor = new Date();
+  cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate()));
+
+  // logs are already ordered desc by date from the API
+  for (const log of logs) {
+    const d = new Date(log.date);
+    const logUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    if (+logUTC === +cursor) {
+      streak++;
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    } else if (+logUTC < +cursor) {
+      break; // gap — streak is over
+    }
+  }
+  return streak;
+}
+
 // ── Animated three-dot loader for stat numbers ────────────────────────────────
 function DotsLoader() {
   return (
@@ -317,11 +339,11 @@ export default function StudentHome() {
       loading: statIsLoading && !classroom.homework,
     },
     {
-      label: "Lessons",
-      value: (classroom.lessons || []).length,
-      icon: BookOpen,
-      color: "purple",
-      loading: statIsLoading && !classroom.lessons,
+      label: "Practice Streak",
+      value: `${computeStreak(logs)}d`,
+      icon: Flame,
+      color: "orange",
+      loading: false,
     },
   ];
 
@@ -884,7 +906,7 @@ export default function StudentHome() {
                 {/* Streak + dot matrix */}
                 <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6">
                   <h2 className="text-lg font-semibold mb-5">Your Streak</h2>
-                  <PracticeStreak logs={logs} streak={todayLog?.streak ?? 0} />
+                  <PracticeStreak logs={logs} streak={computeStreak(logs)} />
                 </div>
               </div>
             )}
