@@ -35,7 +35,15 @@ export default function UpdateSessionStatusModal({
     try { return new Date(dateString).toISOString().split("T")[0]; } catch(e) { return dateString.split("T")[0]; }
   };
 
-  const [status, setStatus] = useState(session.status);
+  // Pull the freshest copy of this session from the store so we always have
+  // the correct sessionMaterials / sessionHomework even if the prop was briefly
+  // stripped of relations by a plain "update" response.
+  const liveSession = useSelector((state) => {
+    const c = state.classrooms.classrooms.find((c) => c.id === classroomId);
+    return c?.sessions?.find((s) => s.id === session.id) || session;
+  });
+
+  const [status, setStatus] = useState((session.status || "scheduled").toLowerCase());
   const [reason, setReason] = useState(session.cancellationReason || "");
   const [rescheduleDate, setRescheduleDate] = useState(
     extractDate(session.rescheduledDate) || "",
@@ -46,24 +54,37 @@ export default function UpdateSessionStatusModal({
   const [rescheduleEnd, setRescheduleEnd] = useState(
     session.rescheduledEnd || "",
   );
-  const [notes, setNotes] = useState(session.notes || "");
-  const [selectedMaterials, setSelectedMaterials] = useState(
-    session.sessionMaterials?.map((sm) => sm.material?.id || sm.materialId) || session.materials?.map((m) => m.id) || [],
-  );
-  const [selectedHomework, setSelectedHomework] = useState(
-    session.sessionHomework?.map((sh) => sh.homework?.id || sh.homeworkId) || session.homeworkIds || session.homework?.map((h) => h.id) || [],
-  );
+  const [notes, setNotes] = useState(liveSession.notes || session.notes || "");
+
+  // Extract the IDs of already-attached materials and homework from the live
+  // session so they are pre-selected and never accidentally wiped.
+  const initMaterials = () => {
+    const sm = liveSession.sessionMaterials || session.sessionMaterials || [];
+    return sm.map((item) => item.material?.id || item.materialId).filter(Boolean);
+  };
+  const initHomework = () => {
+    const sh = liveSession.sessionHomework || session.sessionHomework || [];
+    return sh.map((item) => item.homework?.id || item.homeworkId).filter(Boolean);
+  };
+
+  const [selectedMaterials, setSelectedMaterials] = useState(initMaterials);
+  const [selectedHomework, setSelectedHomework] = useState(initHomework);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       setIsSubmitting(true);
+      // Always include notes, materials, and homework so they are never silently
+      // dropped when re-editing a past session regardless of which status is chosen.
       const payload = {
         classroomId,
         sessionId: session.id,
         data: {
           status: status.toUpperCase(),
+          notes,
+          materialIds: selectedMaterials,
+          homeworkIds: selectedHomework,
         }
       };
 
@@ -75,10 +96,6 @@ export default function UpdateSessionStatusModal({
           startTime: rescheduleStart,
           endTime: rescheduleEnd
         };
-      } else if (status === "completed") {
-        payload.data.notes = notes;
-        payload.data.materialIds = selectedMaterials;
-        payload.data.homeworkIds = selectedHomework;
       }
 
       await dispatch(updateSessionStatus(payload)).unwrap();
@@ -268,95 +285,90 @@ export default function UpdateSessionStatusModal({
               </motion.div>
             )}
 
-            {status === "completed" && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Session Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors h-24 resize-none"
-                    placeholder="Summary of what was covered..."
-                  />
-                </div>
+            {/* Notes, Materials and Homework — always visible so the trainer can
+                edit them when re-opening any past session, not just on first
+                completion. */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-400">
+                  Session Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors h-24 resize-none"
+                  placeholder="Summary of what was covered..."
+                />
+              </div>
 
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Attach Materials
-                  </label>
-                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                    {classroom?.materials.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => toggleMaterial(m.id)}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                          selectedMaterials.includes(m.id)
-                            ? "border-emerald-500 bg-emerald-500/10"
-                            : "border-slate-700 bg-slate-900/50 hover:bg-slate-700/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-200">
-                            {m.title}
-                          </span>
-                        </div>
-                        {selectedMaterials.includes(m.id) && (
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
-                        )}
-                      </button>
-                    ))}
-                    {classroom?.materials.length === 0 && (
-                      <p className="text-sm text-slate-500 text-center py-2">
-                        No materials available
-                      </p>
-                    )}
-                  </div>
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-slate-400">
+                  Attach Materials
+                </label>
+                <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                  {classroom?.materials?.length > 0 ? classroom.materials.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => toggleMaterial(m.id)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        selectedMaterials.includes(m.id)
+                          ? "border-emerald-500 bg-emerald-500/10"
+                          : "border-slate-700 bg-slate-900/50 hover:bg-slate-700/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-200">{m.title}</span>
+                      </div>
+                      {selectedMaterials.includes(m.id) && (
+                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      )}
+                    </button>
+                  )) : (
+                    <p className="text-sm text-slate-500 text-center py-2">
+                      No materials available
+                    </p>
+                  )}
                 </div>
+              </div>
 
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-400">
-                    Map Homework
-                  </label>
-                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                    {classroom?.homework.map((h) => (
-                      <button
-                        key={h.id}
-                        type="button"
-                        onClick={() => toggleHomework(h.id)}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                          selectedHomework.includes(h.id)
-                            ? "border-emerald-500 bg-emerald-500/10"
-                            : "border-slate-700 bg-slate-900/50 hover:bg-slate-700/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <BookOpen className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-200">
-                            {h.title}
-                          </span>
-                        </div>
-                        {selectedHomework.includes(h.id) && (
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
-                        )}
-                      </button>
-                    ))}
-                    {classroom?.homework.length === 0 && (
-                      <p className="text-sm text-slate-500 text-center py-2">
-                        No homework available
-                      </p>
-                    )}
-                  </div>
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-slate-400">
+                  Map Homework
+                </label>
+                <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                  {classroom?.homework?.length > 0 ? classroom.homework.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => toggleHomework(h.id)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        selectedHomework.includes(h.id)
+                          ? "border-emerald-500 bg-emerald-500/10"
+                          : "border-slate-700 bg-slate-900/50 hover:bg-slate-700/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-200">{h.title}</span>
+                      </div>
+                      {selectedHomework.includes(h.id) && (
+                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      )}
+                    </button>
+                  )) : (
+                    <p className="text-sm text-slate-500 text-center py-2">
+                      No homework available
+                    </p>
+                  )}
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </motion.div>
 
             <div className="pt-4 flex gap-3 sticky bottom-0 bg-slate-800 py-4 border-t border-slate-700">
               <button

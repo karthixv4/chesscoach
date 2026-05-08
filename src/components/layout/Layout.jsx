@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import { logout } from "../../store/authSlice";
 import { LogOut, User, BookOpen, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChangePasswordModal from "../modals/ChangePasswordModal";
+import posthog from "../../lib/posthog";
 
 export default function Layout({ children }) {
   const { user } = useSelector((state) => state.auth);
@@ -13,6 +13,8 @@ export default function Layout({ children }) {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   const handleLogout = () => {
+    posthog.capture("user_logged_out");
+    posthog.reset();
     dispatch(logout());
     navigate("/");
   };

@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -13,6 +12,7 @@ import Login from "./pages/Login";
 import TrainerHome from "./pages/TrainerHome";
 import StudentHome from "./pages/StudentHome";
 import Classroom from "./pages/Classroom";
+import posthog from "./lib/posthog";
 
 function AppContent() {
   const dispatch = useDispatch();
@@ -23,6 +23,17 @@ function AppContent() {
       dispatch(fetchMe());
     }
   }, [dispatch]);
+
+  // Identify the user in PostHog once their data is loaded
+  useEffect(() => {
+    if (user) {
+      posthog.identify(user.id, {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
+    }
+  }, [user?.id]);
 
   if (status === "loading") {
     return (
@@ -38,29 +49,27 @@ function AppContent() {
   };
 
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route
-            path="/"
-            element={isAuthenticated ? <Navigate to={getHomeRoute()} replace /> : <Login />}
-          />
-          <Route
-            path="/trainer"
-            element={isAuthenticated && user?.role === "trainer" ? <TrainerHome /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/student"
-            element={isAuthenticated && user?.role === "student" ? <StudentHome /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/classroom/:id"
-            element={isAuthenticated ? <Classroom /> : <Navigate to="/" replace />}
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <Layout>
+      <Routes>
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to={getHomeRoute()} replace /> : <Login />}
+        />
+        <Route
+          path="/trainer"
+          element={isAuthenticated && user?.role === "trainer" ? <TrainerHome /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/student"
+          element={isAuthenticated && user?.role === "student" ? <StudentHome /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/classroom/:id"
+          element={isAuthenticated ? <Classroom /> : <Navigate to="/" replace />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
   );
 }
 

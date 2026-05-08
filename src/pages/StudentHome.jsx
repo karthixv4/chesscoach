@@ -14,6 +14,7 @@ import DailyLogForm from "../components/dashboard/DailyLogForm";
 import PracticeStreak from "../components/dashboard/PracticeStreak";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import posthog from "../lib/posthog";
 
 // ── Compute current streak from a sorted (desc) logs array ──────────────────
 function computeStreak(logs = []) {
@@ -347,6 +348,19 @@ export default function StudentHome() {
     },
   ];
 
+  // Fire student_dashboard_viewed after classroom details are available
+  useEffect(() => {
+    if (classroom?.id && status !== "loading") {
+      posthog.capture("student_dashboard_viewed", {
+        classroom_id: classroom.id,
+        upcoming_sessions: upcomingSessions.length,
+        pending_homework: pendingHomework.length,
+        practice_streak: computeStreak(logs),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classroom?.id, status]);
+
   const colorMap = {
     blue: { bg: "bg-blue-500/10", text: "text-blue-400" },
     orange: { bg: "bg-orange-500/10", text: "text-orange-400" },
@@ -493,7 +507,10 @@ export default function StudentHome() {
         <div className="flex items-center gap-3">
           <button
             id="log-today-btn"
-            onClick={() => setShowLogModal(true)}
+            onClick={() => {
+              posthog.capture("daily_log_modal_opened", { has_existing_log: !!todayLog });
+              setShowLogModal(true);
+            }}
             className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${
               todayLog
                 ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
@@ -507,7 +524,10 @@ export default function StudentHome() {
             )}
           </button>
           <button
-            onClick={() => navigate(`/classroom/${classroom.id}`)}
+            onClick={() => {
+              posthog.capture("enter_classroom_clicked", { classroom_id: classroom.id });
+              navigate(`/classroom/${classroom.id}`);
+            }}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm"
           >
             Enter Classroom
@@ -554,7 +574,10 @@ export default function StudentHome() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    posthog.capture("student_tab_changed", { tab_name: tab.id });
+                    setActiveTab(tab.id);
+                  }}
                   className={`relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                     isActive
                       ? "text-white"
@@ -584,7 +607,10 @@ export default function StudentHome() {
                 {/* Sub-tab bar */}
                 <div className="flex border-b border-slate-700/50">
                   <button
-                    onClick={() => setSessionSubTab("upcoming")}
+                    onClick={() => {
+                      posthog.capture("session_subtab_changed", { subtab: "upcoming" });
+                      setSessionSubTab("upcoming");
+                    }}
                     className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors ${
                       sessionSubTab === "upcoming"
                         ? "text-blue-400 border-b-2 border-blue-400 -mb-px"
@@ -600,7 +626,10 @@ export default function StudentHome() {
                     )}
                   </button>
                   <button
-                    onClick={() => setSessionSubTab("past")}
+                    onClick={() => {
+                      posthog.capture("session_subtab_changed", { subtab: "past" });
+                      setSessionSubTab("past");
+                    }}
                     className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors ${
                       sessionSubTab === "past"
                         ? "text-slate-200 border-b-2 border-slate-400 -mb-px"
@@ -679,6 +708,11 @@ export default function StudentHome() {
                                       href={getGoogleCalendarUrl(session)}
                                       target="_blank"
                                       rel="noopener noreferrer"
+                                      onClick={() => posthog.capture("add_to_calendar_clicked", {
+                                        session_title: session.title,
+                                        session_id: session.id,
+                                        session_date: session.date,
+                                      })}
                                       className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
                                     >
                                       <CalendarPlus className="w-4 h-4" /> Add to Calendar
@@ -689,6 +723,10 @@ export default function StudentHome() {
                                       href={session.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
+                                      onClick={() => posthog.capture("session_join_link_clicked", {
+                                        session_title: session.title,
+                                        session_id: session.id,
+                                      })}
                                       className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
                                     >
                                       Join
@@ -770,9 +808,15 @@ export default function StudentHome() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.1 }}
                           key={hw.id}
-                          onClick={() =>
-                            navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`)
-                          }
+                          onClick={() => {
+                            posthog.capture("homework_item_clicked", {
+                              homework_id: hw.id,
+                              homework_title: hw.title,
+                              homework_type: hw.type,
+                              homework_status: hw.status,
+                            });
+                            navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`);
+                          }}
                           className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group flex-wrap gap-4"
                         >
                           <div>
@@ -830,7 +874,13 @@ export default function StudentHome() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.1 }}
                         key={hw.id}
-                        onClick={() => navigate(`/classroom/${classroom.id}?tab=evaluations`)}
+                        onClick={() => {
+                          posthog.capture("submitted_hw_clicked", {
+                            homework_title: hw.title,
+                            homework_status: hw.status,
+                          });
+                          navigate(`/classroom/${classroom.id}?tab=evaluations`);
+                        }}
                         className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group"
                       >
                         <div>
@@ -958,6 +1008,9 @@ export default function StudentHome() {
                     href={dailyPuzzle ? `https://lichess.org/training/${dailyPuzzle.puzzle.id}` : "#"}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => dailyPuzzle && posthog.capture("lichess_puzzle_opened", {
+                      puzzle_id: dailyPuzzle.puzzle.id,
+                    })}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors w-fit text-sm"
                   >
                     Solve on Lichess

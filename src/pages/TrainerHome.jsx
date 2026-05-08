@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails } from "../store/classroomsSlice";
 import { fetchInactiveStudents } from "../store/dailyLogsSlice";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +11,7 @@ import {
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer";
+import posthog from "../lib/posthog";
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -89,7 +89,23 @@ export default function TrainerHome() {
     inactivityMap[s.classroomId] = s;
   });
 
+  // Fire dashboard_viewed once classrooms are loaded
+  useEffect(() => {
+    if (status === "succeeded" || classrooms.length > 0) {
+      posthog.capture("trainer_dashboard_viewed", {
+        classroom_count: classrooms.length,
+        flagged_student_count: inactiveStudents?.flaggedCount ?? 0,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   const handleSelectStudent = (classroomId) => {
+    const classroom = classrooms.find((c) => c.id === classroomId);
+    posthog.capture("open_classroom_clicked", {
+      student_name: classroom?.studentName,
+      classroom_id: classroomId,
+    });
     dispatch(setActiveClassroom(classroomId));
     navigate(`/classroom/${classroomId}`);
   };
@@ -183,7 +199,10 @@ export default function TrainerHome() {
           <p className="text-slate-400 mt-1">Manage your students and classrooms</p>
         </div>
         <button
-          onClick={() => setIsAddStudentModalOpen(true)}
+          onClick={() => {
+            posthog.capture("add_student_clicked");
+            setIsAddStudentModalOpen(true);
+          }}
           className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
         >
           <Users className="w-4 h-4" />
@@ -264,7 +283,11 @@ export default function TrainerHome() {
             <span className="text-[11px] text-slate-500">Flag after</span>
             <select
               value={inactiveDays}
-              onChange={(e) => setInactiveDays(Number(e.target.value))}
+              onChange={(e) => {
+                const days = Number(e.target.value);
+                posthog.capture("inactivity_threshold_changed", { new_threshold_days: days });
+                setInactiveDays(days);
+              }}
               className="flex-1 bg-slate-700/70 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-slate-500"
             >
               {[1, 2, 3, 5, 7, 14].map((d) => (
@@ -338,6 +361,11 @@ export default function TrainerHome() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      posthog.capture("student_analytics_opened", {
+                        student_name: classroom.studentName,
+                        classroom_id: classroom.id,
+                        days_inactive: activityData?.daysInactive ?? null,
+                      });
                       setDrawerClassroom(classroom);
                     }}
                     className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
@@ -349,6 +377,10 @@ export default function TrainerHome() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      posthog.capture("edit_student_clicked", {
+                        student_name: classroom.studentName,
+                        classroom_id: classroom.id,
+                      });
                       setEditingStudent({ id: classroom.id, studentName: classroom.studentName });
                       setIsAddStudentModalOpen(true);
                     }}
@@ -365,7 +397,13 @@ export default function TrainerHome() {
                         isOpen: true,
                         title: "Delete Student",
                         message: `Are you sure you want to delete ${classroom.studentName}? This will permanently remove all related details.`,
-                        onConfirm: () => dispatch(deleteClassroom(classroom.id)),
+                        onConfirm: () => {
+                          posthog.capture("delete_student_confirmed", {
+                            student_name: classroom.studentName,
+                            classroom_id: classroom.id,
+                          });
+                          dispatch(deleteClassroom(classroom.id));
+                        },
                       });
                     }}
                     className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"

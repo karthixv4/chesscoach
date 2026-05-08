@@ -46,6 +46,7 @@ import AddMaterialModal from "../components/modals/AddMaterialModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import ImageViewerModal from "../components/modals/ImageViewerModal";
 import WorksheetEvaluationModal from "../components/modals/WorksheetEvaluationModal";
+import posthog from "../lib/posthog";
 
 const PDFViewer = ({ fileUrl }) => {
   const getEmbeddableUrl = (url) => {
@@ -137,6 +138,18 @@ export default function Classroom() {
     }
   }, [dispatch, id]);
 
+  // Fire classroom_viewed on mount
+  useEffect(() => {
+    if (classroom) {
+      posthog.capture("classroom_viewed", {
+        classroom_id: id,
+        student_name: classroom.studentName,
+        user_role: user?.role,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   // Show skeleton loader when details are fetching (either overall status=loading, or detailsStatus=loading for this classroom)
   const isLoadingDetails = detailsStatus === 'loading' && (!classroom || !classroom.sessions);
 
@@ -177,6 +190,7 @@ export default function Classroom() {
   ];
 
   const handleTabChange = (tabId) => {
+    posthog.capture("classroom_tab_changed", { tab_name: tabId, classroom_id: id });
     setSearchParams({ tab: tabId });
   };
 
@@ -316,14 +330,27 @@ export default function Classroom() {
           return (
             <div
               key={session.id}
-              onClick={() => setViewingSessionId(session.id)}
+              onClick={() => {
+                posthog.capture("session_card_clicked", {
+                  session_id: session.id,
+                  session_title: session.title,
+                  session_status: session.status,
+                });
+                setViewingSessionId(session.id);
+              }}
               className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 group relative cursor-pointer hover:border-emerald-500/50 transition-colors"
             >
+
               {isTrainer && (
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      posthog.capture("update_session_status_clicked", {
+                        session_id: session.id,
+                        session_title: session.title,
+                        current_status: session.status,
+                      });
                       setUpdatingSession(session);
                       setIsUpdateStatusModalOpen(true);
                     }}
@@ -335,6 +362,11 @@ export default function Classroom() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      posthog.capture("edit_session_clicked", {
+                        session_id: session.id,
+                        session_title: session.title,
+                        session_status: session.status,
+                      });
                       setEditingSession(session);
                       setIsScheduleModalOpen(true);
                     }}
@@ -349,13 +381,13 @@ export default function Classroom() {
                         isOpen: true,
                         title: "Cancel Session",
                         message: `Are you sure you want to cancel "${session.title}"?`,
-                        onConfirm: () =>
-                          dispatch(
-                            deleteSession({
-                              classroomId: classroom.id,
-                              sessionId: session.id,
-                            }),
-                          ),
+                        onConfirm: () => {
+                          posthog.capture("delete_session_confirmed", {
+                            session_id: session.id,
+                            session_title: session.title,
+                          });
+                          dispatch(deleteSession({ classroomId: classroom.id, sessionId: session.id }));
+                        },
                       });
                     }}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -534,6 +566,7 @@ export default function Classroom() {
                   href={session.link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => posthog.capture("session_join_link_clicked", { session_id: session.id, session_title: session.title, session_status: "ongoing" })}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors"
                 >
                   <Video className="w-4 h-4" /> Join Live Session
@@ -545,6 +578,7 @@ export default function Classroom() {
                   href={session.link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => posthog.capture("session_join_link_clicked", { session_id: session.id, session_title: session.title, session_status: "scheduled" })}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
                 >
                   Join Session
@@ -556,7 +590,7 @@ export default function Classroom() {
                   href={getGoogleCalendarUrl(session, classroom)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); posthog.capture("add_to_calendar_clicked", { session_id: session.id, session_title: session.title }); }}
                   className="w-full mt-3 flex items-center justify-center gap-2 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl font-medium transition-colors"
                 >
                   <CalendarPlus className="w-4 h-4" /> Add to Google Calendar
@@ -588,6 +622,7 @@ export default function Classroom() {
                 {isTrainer && (
                   <button
                     onClick={() => {
+                      posthog.capture("schedule_session_clicked", { classroom_id: classroom.id });
                       setEditingSession(null);
                       setIsScheduleModalOpen(true);
                     }}
@@ -656,6 +691,7 @@ export default function Classroom() {
               {isTrainer && (
                 <button
                   onClick={() => {
+                    posthog.capture("assign_homework_clicked", { classroom_id: classroom.id });
                     setEditingHomework(null);
                     setIsAssignModalOpen(true);
                   }}
@@ -684,6 +720,7 @@ export default function Classroom() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
+                              posthog.capture("edit_homework_clicked", { homework_id: hw.id, homework_title: hw.title });
                               setEditingHomework(hw);
                               setIsAssignModalOpen(true);
                             }}
@@ -697,13 +734,10 @@ export default function Classroom() {
                                 isOpen: true,
                                 title: "Delete Assignment",
                                 message: `Are you sure you want to delete "${hw.title}"?`,
-                                onConfirm: () =>
-                                  dispatch(
-                                    deleteHomework({
-                                      classroomId: classroom.id,
-                                      homeworkId: hw.id,
-                                    }),
-                                  ),
+                                onConfirm: () => {
+                                  posthog.capture("delete_homework_confirmed", { homework_id: hw.id, homework_title: hw.title });
+                                  dispatch(deleteHomework({ classroomId: classroom.id, homeworkId: hw.id }));
+                                },
                               });
                             }}
                             className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -813,7 +847,10 @@ export default function Classroom() {
                             <LayoutGrid className="w-16 h-16 text-slate-500 mb-4 opacity-50" />
                             <h4 className="text-slate-300 font-medium mb-6 text-center">Interactive Chess Puzzle</h4>
                             <button
-                              onClick={() => setActiveSolvingBoardId(hw.id)}
+                              onClick={() => {
+                                posthog.capture("homework_board_solve_started", { homework_id: hw.id, homework_title: hw.title });
+                                setActiveSolvingBoardId(hw.id);
+                              }}
                               className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 text-lg"
                             >
                               Start solving this
@@ -871,6 +908,13 @@ export default function Classroom() {
                             <button
                               disabled={isSubmitting || (!submissionTexts[hw.id]?.trim() && !(submissionFiles[hw.id]?.length > 0))}
                               onClick={() => {
+                                posthog.capture("homework_submitted", {
+                                  homework_id: hw.id,
+                                  homework_title: hw.title,
+                                  homework_type: hw.type,
+                                  has_images: (submissionFiles[hw.id]?.length ?? 0) > 0,
+                                  image_count: submissionFiles[hw.id]?.length ?? 0,
+                                });
                                 handleSubmitHomework(hw, submissionTexts[hw.id] || "Submitted evidence images.");
                                 setSubmissionTexts(prev => ({ ...prev, [hw.id]: "" }));
                               }}
@@ -982,6 +1026,7 @@ export default function Classroom() {
                         evaluatingId !== hw.id && (
                           <button
                             onClick={() => {
+                              posthog.capture("grade_homework_clicked", { homework_id: hw.id, homework_status: hw.status });
                               if (hw.type !== "board") {
                                 setEvaluatingHomework(hw);
                               } else {
@@ -1100,7 +1145,14 @@ export default function Classroom() {
                               Cancel
                             </button>
                             <button
-                              onClick={() => handleEvaluate(hw.id)}
+                              onClick={() => {
+                                posthog.capture("homework_evaluated", {
+                                  homework_id: hw.id,
+                                  score,
+                                  has_feedback: !!feedbackText.trim(),
+                                });
+                                handleEvaluate(hw.id);
+                              }}
                               disabled={score === 0}
                               className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -1135,7 +1187,10 @@ export default function Classroom() {
               <h2 className="text-2xl font-semibold">Library</h2>
               {isTrainer && (
                 <button
-                  onClick={() => setIsMaterialModalOpen(true)}
+                  onClick={() => {
+                    posthog.capture("material_upload_clicked", { classroom_id: classroom.id });
+                    setIsMaterialModalOpen(true);
+                  }}
                   className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" /> Upload Material
@@ -1156,7 +1211,10 @@ export default function Classroom() {
                   <div
                     key={mat.id}
                     onClick={(e) => {
-                      if (mat.type?.toLowerCase() !== "image") window.open(mat.url, "_blank");
+                      if (mat.type?.toLowerCase() !== "image") {
+                        posthog.capture("material_opened", { material_id: mat.id, material_title: mat.title, material_type: mat.type });
+                        window.open(mat.url, "_blank");
+                      }
                     }}
                     className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50 hover:border-slate-600 transition-colors cursor-pointer group relative flex flex-col h-full"
                   >
@@ -1165,6 +1223,7 @@ export default function Classroom() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            posthog.capture("edit_material_clicked", { material_id: mat.id, material_title: mat.title, material_type: mat.type });
                             setEditingMaterial(mat);
                             setIsMaterialModalOpen(true);
                           }}
@@ -1179,13 +1238,10 @@ export default function Classroom() {
                               isOpen: true,
                               title: "Delete Material",
                               message: `Are you sure you want to delete "${mat.title}"?`,
-                              onConfirm: () =>
-                                dispatch(
-                                  deleteMaterial({
-                                    classroomId: classroom.id,
-                                    materialId: mat.id,
-                                  }),
-                                ),
+                              onConfirm: () => {
+                                posthog.capture("delete_material_confirmed", { material_id: mat.id, material_title: mat.title });
+                                dispatch(deleteMaterial({ classroomId: classroom.id, materialId: mat.id }));
+                              },
                             });
                           }}
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
