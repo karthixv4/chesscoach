@@ -12,7 +12,6 @@ import Login from "./pages/Login";
 import TrainerHome from "./pages/TrainerHome";
 import StudentHome from "./pages/StudentHome";
 import Classroom from "./pages/Classroom";
-import posthog from "./lib/posthog";
 
 function AppContent() {
   const dispatch = useDispatch();
@@ -24,16 +23,7 @@ function AppContent() {
     }
   }, [dispatch]);
 
-  // Identify the user in PostHog once their data is loaded
-  useEffect(() => {
-    if (user) {
-      posthog.identify(user.id, {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      });
-    }
-  }, [user?.id]);
+
 
   if (status === "loading") {
     return (

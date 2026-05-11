@@ -4,7 +4,7 @@ import { loginUser } from "../store/authSlice";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen, AlertCircle } from "lucide-react";
-import posthog from "../lib/posthog";
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,20 +21,11 @@ export default function Login() {
 
     if (loginUser.fulfilled.match(resultAction)) {
       const user = resultAction.payload.user;
-      posthog.capture("user_logged_in", {
-        user_id: user.id,
-        name: user.name,
-        role: user.role,
-      });
       if (user.role === "trainer") {
         navigate("/trainer");
       } else {
         navigate("/student");
       }
-    } else {
-      posthog.capture("login_failed", {
-        error_message: resultAction.payload || "Unknown error",
-      });
     }
   };
 

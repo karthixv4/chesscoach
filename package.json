@@ -24,7 +24,6 @@
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
-    "posthog-js": "^1.372.10",
     "react": "^18.3.1",
     "react-chessboard": "^4.7.3",
     "react-dnd-touch-backend": "^16.0.1",
