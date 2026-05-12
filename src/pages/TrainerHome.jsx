@@ -11,6 +11,7 @@ import {
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer";
+import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -193,6 +194,9 @@ export default function TrainerHome() {
           Add Student
         </button>
       </header>
+
+      {/* ── Quote of the Day ─────────────────────────────────────────────── */}
+      <QuoteOfTheDay />
 
       {/* ── Stat cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

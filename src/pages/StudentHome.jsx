@@ -12,6 +12,7 @@ import {
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import DailyLogForm from "../components/dashboard/DailyLogForm";
 import PracticeStreak from "../components/dashboard/PracticeStreak";
+import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -521,6 +522,9 @@ export default function StudentHome() {
           </button>
         </div>
       </header>
+
+      {/* ── Quote of the Day ─────────────────────────────────────────────── */}
+      <QuoteOfTheDay />
 
       {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
