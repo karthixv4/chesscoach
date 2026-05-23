@@ -13,6 +13,8 @@ import ProgressTracker from "../components/dashboard/ProgressTracker";
 import DailyLogForm from "../components/dashboard/DailyLogForm";
 import PracticeStreak from "../components/dashboard/PracticeStreak";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
+import ViewSessionModal from "../components/modals/ViewSessionModal";
+import CalendarView from "../components/dashboard/CalendarView";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -56,7 +58,7 @@ function DotsLoader() {
 
 export default function StudentHome() {
   const { user } = useSelector((state) => state.auth);
-  const { classrooms, status, detailsStatus, studentSessions } = useSelector(
+  const { classrooms, status, detailsStatus, studentSessions, studentSessionsStatus } = useSelector(
     (state) => state.classrooms
   );
   const { logs, todayLog } = useSelector((state) => state.dailyLogs);
@@ -66,11 +68,13 @@ export default function StudentHome() {
   const [puzzleFen, setPuzzleFen] = useState("");
   const [puzzleLoading, setPuzzleLoading] = useState(true);
   const [puzzleError, setPuzzleError] = useState(false);
-  const [activeTab, setActiveTab] = useState("upcoming");
-  // Sub-tab inside the sessions tab: "upcoming" | "past"
-  const [sessionSubTab, setSessionSubTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("schedule");
+  // Sub-tabs
+  const [scheduleSubTab, setScheduleSubTab] = useState("calendar"); // "calendar" | "upcoming" | "past"
+  const [assignmentSubTab, setAssignmentSubTab] = useState("pending"); // "pending" | "completed"
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showLogModal, setShowLogModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -78,11 +82,9 @@ export default function StudentHome() {
   }, []);
 
   const tabs = [
-    { id: "upcoming", label: "Sessions", icon: Calendar },
-    { id: "homework", label: "Homework", icon: FileText },
-    { id: "submitted", label: "Submitted", icon: CheckCircle },
-    { id: "progress", label: "Progress", icon: BookOpen },
-    { id: "practice", label: "Practice", icon: Flame },
+    { id: "schedule", label: "Schedule", icon: Calendar },
+    { id: "assignments", label: "Assignments", icon: FileText },
+    { id: "performance", label: "Performance", icon: Flame },
   ];
 
   // ── Daily puzzle ────────────────────────────────────────────────────────────
@@ -114,7 +116,7 @@ export default function StudentHome() {
   useEffect(() => {
     dispatch(fetchClassrooms());
     if (user?.id) {
-      dispatch(fetchStudentSessions(user.id));
+      dispatch(fetchStudentSessions({ studentId: user.id }));
     }
   }, [dispatch, user?.id]);
 
@@ -479,6 +481,17 @@ export default function StudentHome() {
             onClose={() => setShowLogModal(false)}
           />
         )}
+
+        {selectedSession && (
+          <ViewSessionModal
+            classroomId={classroom.id}
+            sessionId={selectedSession.id}
+            onClose={() => setSelectedSession(null)}
+            onHomeworkClick={(hwId) => {
+              navigate(`/classroom/${classroom.id}?tab=homework&id=${hwId}`);
+            }}
+          />
+        )}
       </AnimatePresence>
 
       <header className="flex items-center justify-between flex-wrap gap-3">
@@ -590,17 +603,26 @@ export default function StudentHome() {
           </div>
 
           <div className="mt-6">
-            {/* ── Sessions tab (upcoming + past sub-tabs) ───────────────────── */}
-            {activeTab === "upcoming" && (
+            {/* ── Schedule Tab ──────────────────────────────────────────────── */}
+            {activeTab === "schedule" && (
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-                {/* Sub-tab bar */}
-                <div className="flex border-b border-slate-700/50">
+                {/* Schedule Sub-tabs */}
+                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
                   <button
-                    onClick={() => {
-                      setSessionSubTab("upcoming");
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors ${
-                      sessionSubTab === "upcoming"
+                    onClick={() => setScheduleSubTab("calendar")}
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+                      scheduleSubTab === "calendar"
+                        ? "text-blue-400 border-b-2 border-blue-400 -mb-px"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Calendar
+                  </button>
+                  <button
+                    onClick={() => setScheduleSubTab("upcoming")}
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+                      scheduleSubTab === "upcoming"
                         ? "text-blue-400 border-b-2 border-blue-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
@@ -614,17 +636,15 @@ export default function StudentHome() {
                     )}
                   </button>
                   <button
-                    onClick={() => {
-                      setSessionSubTab("past");
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors ${
-                      sessionSubTab === "past"
+                    onClick={() => setScheduleSubTab("past")}
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+                      scheduleSubTab === "past"
                         ? "text-slate-200 border-b-2 border-slate-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
                     <History className="w-4 h-4" />
-                    Past Sessions
+                    Past
                     {!sessionsLoading && pastSessions.length > 0 && (
                       <span className="ml-1 px-1.5 py-0.5 bg-slate-700 text-slate-400 text-xs rounded-full font-bold">
                         {pastSessions.length}
@@ -634,8 +654,28 @@ export default function StudentHome() {
                 </div>
 
                 <AnimatePresence mode="wait">
-                  {/* ── Upcoming sub-tab ──────────────────────────────────── */}
-                  {sessionSubTab === "upcoming" && (
+                  {/* Calendar View */}
+                  {scheduleSubTab === "calendar" && (
+                    <motion.div
+                      key="calendar"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="border-t border-slate-700/50"
+                    >
+                      <CalendarView 
+                        sessions={allSessions} 
+                        isLoading={studentSessionsStatus === "loading"} 
+                        onMonthChange={({ startDate, endDate }) => dispatch(fetchStudentSessions({ studentId: user.id, startDate, endDate }))} 
+                        userRole="student" 
+                        onSessionClick={(session) => setSelectedSession(session)}
+                      />
+                    </motion.div>
+                  )}
+
+                  {/* Upcoming Sessions */}
+                  {scheduleSubTab === "upcoming" && (
                     <motion.div
                       key="upcoming"
                       initial={{ opacity: 0, y: 6 }}
@@ -719,8 +759,8 @@ export default function StudentHome() {
                     </motion.div>
                   )}
 
-                  {/* ── Past sessions sub-tab ─────────────────────────────── */}
-                  {sessionSubTab === "past" && (
+                  {/* Past Sessions */}
+                  {scheduleSubTab === "past" && (
                     <motion.div
                       key="past"
                       initial={{ opacity: 0, y: 6 }}
@@ -758,173 +798,233 @@ export default function StudentHome() {
               </div>
             )}
 
-            {/* ── Homework tab ─────────────────────────────────────────────── */}
-            {activeTab === "homework" && (
+            {/* ── Assignments Tab ────────────────────────────────────────────── */}
+            {activeTab === "assignments" && (
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div className="p-6 border-b border-slate-700/50">
-                  <h2 className="text-xl font-semibold">Pending Homework</h2>
+                {/* Assignments Sub-tabs */}
+                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
+                  <button
+                    onClick={() => setAssignmentSubTab("pending")}
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+                      assignmentSubTab === "pending"
+                        ? "text-orange-400 border-b-2 border-orange-400 -mb-px"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    Pending Tasks
+                    {!detailsStatus && pendingHomework.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded-full font-bold">
+                        {pendingHomework.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setAssignmentSubTab("completed")}
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+                      assignmentSubTab === "completed"
+                        ? "text-emerald-400 border-b-2 border-emerald-400 -mb-px"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Completed
+                    {!detailsStatus && completedHomework.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-bold">
+                        {completedHomework.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
-                <div className="divide-y divide-slate-700/50">
-                  {detailsStatus === "loading" && !classroom.homework ? (
-                    [...Array(3)].map((_, i) => (
-                      <div key={i} className="p-6 flex items-center gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="h-4 w-48 bg-slate-700/60 rounded animate-pulse" />
-                          <div className="h-3 w-28 bg-slate-700/60 rounded animate-pulse" />
-                        </div>
-                        <div className="w-5 h-5 bg-slate-700/60 rounded animate-pulse" />
-                      </div>
-                    ))
-                  ) : pendingHomework.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400">All caught up!</div>
-                  ) : (
-                    pendingHomework.map((hw, i) => {
-                      const dueText = getDueTimeInfo(hw);
-                      return (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          key={hw.id}
-                          onClick={() => {
-                            navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`);
-                          }}
-                          className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group flex-wrap gap-4"
-                        >
-                          <div>
-                            <h3 className="font-medium text-lg group-hover:text-blue-400 transition-colors">
-                              {hw.title}
-                            </h3>
-                            <div className="flex items-center flex-wrap gap-3 mt-2">
-                              <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize">
-                                <FileText className="w-4 h-4" />
-                                {hw.type} Challenge
-                              </p>
-                              {dueText && (
-                                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1 ${
-                                  dueText === "Overdue" 
-                                    ? "bg-red-500/10 text-red-400 border border-red-500/20" 
-                                    : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                                }`}>
-                                  <Clock className="w-3 h-3" /> {dueText}
-                                </span>
-                              )}
+
+                <AnimatePresence mode="wait">
+                  {/* Pending Homework */}
+                  {assignmentSubTab === "pending" && (
+                    <motion.div
+                      key="pending"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="divide-y divide-slate-700/50"
+                    >
+                      {detailsStatus === "loading" && !classroom.homework ? (
+                        [...Array(3)].map((_, i) => (
+                          <div key={i} className="p-6 flex items-center gap-4">
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 w-48 bg-slate-700/60 rounded animate-pulse" />
+                              <div className="h-3 w-28 bg-slate-700/60 rounded animate-pulse" />
                             </div>
+                            <div className="w-5 h-5 bg-slate-700/60 rounded animate-pulse" />
                           </div>
-                          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                        </motion.div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── Submitted Homework tab ────────────────────────────────────── */}
-            {activeTab === "submitted" && (
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div className="p-6 border-b border-slate-700/50">
-                  <h2 className="text-xl font-semibold">Submitted Homework</h2>
-                </div>
-                <div className="divide-y divide-slate-700/50">
-                  {detailsStatus === "loading" && !classroom.homework ? (
-                    [...Array(3)].map((_, i) => (
-                      <div key={i} className="p-6 flex items-center gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="h-4 w-44 bg-slate-700/60 rounded animate-pulse" />
-                          <div className="h-3 w-24 bg-slate-700/60 rounded animate-pulse" />
+                        ))
+                      ) : pendingHomework.length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
+                          <CheckCircle className="w-12 h-12 text-emerald-500/50" />
+                          <p>All caught up! No pending tasks.</p>
                         </div>
-                        <div className="w-16 h-5 bg-slate-700/60 rounded-full animate-pulse" />
-                      </div>
-                    ))
-                  ) : completedHomework.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400">No submitted homework yet.</div>
-                  ) : (
-                    completedHomework.map((hw, i) => (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        key={hw.id}
-                        onClick={() => {
-                          navigate(`/classroom/${classroom.id}?tab=evaluations`);
-                        }}
-                        className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group"
-                      >
-                        <div>
-                          <h3 className="font-medium text-lg group-hover:text-emerald-400 transition-colors">
-                            {hw.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-slate-400 capitalize">
-                              {hw.type} Challenge
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                hw.status?.toLowerCase() === "evaluated"
-                                  ? "bg-emerald-500/20 text-emerald-400"
-                                  : "bg-amber-500/20 text-amber-400"
-                              }`}
+                      ) : (
+                        pendingHomework.map((hw, i) => {
+                          const dueText = getDueTimeInfo(hw);
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.1 }}
+                              key={hw.id}
+                              onClick={() => {
+                                navigate(`/classroom/${classroom.id}?tab=homework&id=${hw.id}`);
+                              }}
+                              className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group flex-wrap gap-4"
                             >
-                              {hw.status?.toLowerCase() === "submitted"
-                                ? "Pending Evaluation"
-                                : "Evaluated"}
-                            </span>
+                              <div>
+                                <h3 className="font-medium text-lg group-hover:text-blue-400 transition-colors">
+                                  {hw.title}
+                                </h3>
+                                <div className="flex items-center flex-wrap gap-3 mt-2">
+                                  <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize">
+                                    <FileText className="w-4 h-4" />
+                                    {hw.type} Challenge
+                                  </p>
+                                  {dueText && (
+                                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1 ${
+                                      dueText === "Overdue" 
+                                        ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                                        : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                    }`}>
+                                      <Clock className="w-3 h-3" /> {dueText}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                            </motion.div>
+                          );
+                        })
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* Completed Homework */}
+                  {assignmentSubTab === "completed" && (
+                    <motion.div
+                      key="completed"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="divide-y divide-slate-700/50"
+                    >
+                      {detailsStatus === "loading" && !classroom.homework ? (
+                        [...Array(3)].map((_, i) => (
+                          <div key={i} className="p-6 flex items-center gap-4">
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 w-44 bg-slate-700/60 rounded animate-pulse" />
+                              <div className="h-3 w-24 bg-slate-700/60 rounded animate-pulse" />
+                            </div>
+                            <div className="w-16 h-5 bg-slate-700/60 rounded-full animate-pulse" />
                           </div>
+                        ))
+                      ) : completedHomework.length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
+                          <BookOpen className="w-12 h-12 text-slate-600" />
+                          <p>No submitted homework yet.</p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
-                      </motion.div>
-                    ))
+                      ) : (
+                        completedHomework.map((hw, i) => (
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            key={hw.id}
+                            onClick={() => {
+                              navigate(`/classroom/${classroom.id}?tab=evaluations`);
+                            }}
+                            className="p-6 hover:bg-slate-700/30 transition-colors cursor-pointer flex items-center justify-between group"
+                          >
+                            <div>
+                              <h3 className="font-medium text-lg group-hover:text-emerald-400 transition-colors">
+                                {hw.title}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-sm text-slate-400 capitalize">
+                                  {hw.type} Challenge
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    hw.status?.toLowerCase() === "evaluated"
+                                      ? "bg-emerald-500/20 text-emerald-400"
+                                      : "bg-amber-500/20 text-amber-400"
+                                  }`}
+                                >
+                                  {hw.status?.toLowerCase() === "submitted"
+                                    ? "Pending Evaluation"
+                                    : "Evaluated"}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                          </motion.div>
+                        ))
+                      )}
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
             )}
 
-            {/* ── Progress tab ─────────────────────────────────────────────── */}
-            {activeTab === "progress" && (
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div className="p-6 border-b border-slate-700/50">
-                  <h2 className="text-xl font-semibold">Homework Progress</h2>
-                </div>
-                <div className="p-6">
-                  <ProgressTracker homework={classroom.homework || []} />
-                </div>
-              </div>
-            )}
-
-            {/* ── Practice tab ─────────────────────────────────────────────── */}
-            {activeTab === "practice" && (
-              <div className="space-y-6">
-                {/* Quick-log CTA */}
-                <div
-                  onClick={() => setShowLogModal(true)}
-                  className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${
-                    todayLog
-                      ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
-                      : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
-                  }`}
-                >
-                  <div>
-                    <p className="font-semibold text-white">
-                      {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
-                    </p>
-                    <p className="text-sm text-slate-400 mt-0.5">
-                      {todayLog
-                        ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
-                        : "Tap to log your practice — takes under 1 minute"}
-                    </p>
+            {/* ── Performance Tab ────────────────────────────────────────────── */}
+            {activeTab === "performance" && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Practice Streak Card */}
+                <div className="space-y-6">
+                  {/* Quick-log CTA */}
+                  <div
+                    onClick={() => setShowLogModal(true)}
+                    className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${
+                      todayLog
+                        ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                        : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold text-white">
+                        {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
+                      </p>
+                      <p className="text-sm text-slate-400 mt-0.5">
+                        {todayLog
+                          ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
+                          : "Tap to log your practice — takes under 1 minute"}
+                      </p>
+                    </div>
+                    {todayLog ? (
+                      <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
+                    ) : (
+                      <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
+                    )}
                   </div>
-                  {todayLog ? (
-                    <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
-                  ) : (
-                    <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
-                  )}
+
+                  {/* Streak + dot matrix */}
+                  <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
+                    <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                      <Flame className="w-5 h-5 text-orange-400" />
+                      Your Streak
+                    </h2>
+                    <div className="flex-1">
+                      <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Streak + dot matrix */}
-                <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6">
-                  <h2 className="text-lg font-semibold mb-5">Your Streak</h2>
-                  <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                {/* Progress Tracker Card */}
+                <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
+                  <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-blue-400" />
+                    Homework Progress
+                  </h2>
+                  <div className="flex-1">
+                    <ProgressTracker homework={classroom.homework || []} />
+                  </div>
                 </div>
               </div>
             )}

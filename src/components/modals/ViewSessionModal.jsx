@@ -13,8 +13,12 @@ export default function ViewSessionModal({
 }) {
   const dispatch = useDispatch();
   
-  const classroom = useSelector((state) => state.classrooms.classrooms.find(c => c.id === classroomId));
-  const session = classroom?.sessions?.find(s => s.id === sessionId);
+  const { classrooms, studentSessions, trainerSessions } = useSelector((state) => state.classrooms);
+  
+  const classroom = classrooms.find(c => c.id === classroomId);
+  const session = classroom?.sessions?.find(s => s.id === sessionId) 
+    || studentSessions.find(s => s.id === sessionId)
+    || trainerSessions.find(s => s.id === sessionId);
 
   const materials = session?.sessionMaterials?.map(sm => sm.material) || session?.materials || [];
   const homeworks = session?.sessionHomework?.map(sh => sh.homework) || session?.homework || [];
@@ -162,7 +166,7 @@ export default function ViewSessionModal({
                                        src={src}
                                        alt={mat.title}
                                        className="h-10 w-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                       onClick={() => onImageClick && onImageClick(src)}
+                                       onClick={() => onImageClick ? onImageClick(src) : window.open(src, '_blank')}
                                      />
                                   ))}
                                 </div>

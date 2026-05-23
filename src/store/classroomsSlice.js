@@ -85,12 +85,29 @@ export const deleteSession = createAsyncThunk('sessions/delete', async ({ classr
   }
 });
 
-export const fetchStudentSessions = createAsyncThunk('sessions/fetchByStudent', async (studentId, { rejectWithValue }) => {
+export const fetchStudentSessions = createAsyncThunk('sessions/fetchByStudent', async ({ studentId, startDate, endDate }, { rejectWithValue }) => {
   try {
-    const res = await api.get(`/sessions/student/${studentId}`);
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const res = await api.get(`/sessions/student/${studentId}${queryString}`);
     return res.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.error || 'Failed to fetch student sessions');
+  }
+});
+
+export const fetchTrainerSessions = createAsyncThunk('sessions/fetchByTrainer', async ({ startDate, endDate } = {}, { rejectWithValue }) => {
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const res = await api.get(`/sessions/trainer${queryString}`);
+    return res.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to fetch trainer sessions');
   }
 });
 
@@ -202,9 +219,12 @@ const initialState = {
   classrooms: [],
   notifications: [],
   studentSessions: [],
+  trainerSessions: [],
   activeClassroom: null,
   status: 'idle',
   detailsStatus: 'idle', // tracks fetchClassroomDetails loading
+  trainerSessionsStatus: 'idle',
+  studentSessionsStatus: 'idle',
   error: null,
 };
 
@@ -308,8 +328,26 @@ const classroomsSlice = createSlice({
         c.sessions = c.sessions.filter(s => s.id !== action.payload.sessionId);
       });
     });
+    builder.addCase(fetchStudentSessions.pending, (state) => {
+      state.studentSessionsStatus = 'loading';
+    });
     builder.addCase(fetchStudentSessions.fulfilled, (state, action) => {
+      state.studentSessionsStatus = 'idle';
       state.studentSessions = action.payload;
+    });
+    builder.addCase(fetchStudentSessions.rejected, (state) => {
+      state.studentSessionsStatus = 'idle';
+    });
+
+    builder.addCase(fetchTrainerSessions.pending, (state) => {
+      state.trainerSessionsStatus = 'loading';
+    });
+    builder.addCase(fetchTrainerSessions.fulfilled, (state, action) => {
+      state.trainerSessionsStatus = 'idle';
+      state.trainerSessions = action.payload;
+    });
+    builder.addCase(fetchTrainerSessions.rejected, (state) => {
+      state.trainerSessionsStatus = 'idle';
     });
 
 

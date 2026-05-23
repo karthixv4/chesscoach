@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails } from "../store/classroomsSlice";
+import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails, fetchTrainerSessions } from "../store/classroomsSlice";
 import { fetchInactiveStudents } from "../store/dailyLogsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
+import ViewSessionModal from "../components/modals/ViewSessionModal";
 import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
+import CalendarView from "../components/dashboard/CalendarView";
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -53,7 +55,7 @@ function ActivityBadge({ studentData }) {
 }
 
 export default function TrainerHome() {
-  const { classrooms, status, detailsStatus } = useSelector((state) => state.classrooms);
+  const { classrooms, status, detailsStatus, trainerSessions, trainerSessionsStatus } = useSelector((state) => state.classrooms);
   const { inactiveStudents, inactiveStatus } = useSelector((state) => state.dailyLogs);
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
@@ -62,7 +64,9 @@ export default function TrainerHome() {
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [drawerClassroom, setDrawerClassroom] = useState(null);
+  const [selectedSession, setSelectedSession] = useState(null);
   const [inactiveDays, setInactiveDays] = useState(3);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const [confirmation, setConfirmation] = useState({
     isOpen: false, title: "", message: "", onConfirm: () => {},
@@ -176,6 +180,18 @@ export default function TrainerHome() {
             onClose={() => setDrawerClassroom(null)}
           />
         )}
+
+        {/* View Session Modal */}
+        {selectedSession && (
+          <ViewSessionModal
+            classroomId={selectedSession.classroomId}
+            sessionId={selectedSession.id}
+            onClose={() => setSelectedSession(null)}
+            onHomeworkClick={(hwId) => {
+              navigate(`/classroom/${selectedSession.classroomId}?tab=homework&id=${hwId}`);
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* ── Page header ──────────────────────────────────────────────────── */}
@@ -184,20 +200,48 @@ export default function TrainerHome() {
           <h1 className="text-3xl font-semibold tracking-tight">Trainer Dashboard</h1>
           <p className="text-slate-400 mt-1">Manage your students and classrooms</p>
         </div>
-        <button
-          onClick={() => {
-            setIsAddStudentModalOpen(true);
-          }}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
-        >
-          <Users className="w-4 h-4" />
-          Add Student
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "dashboard" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab("calendar")}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "calendar" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            >
+              Calendar
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setIsAddStudentModalOpen(true);
+            }}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Add Student
+          </button>
+        </div>
       </header>
 
       {/* ── Quote of the Day ─────────────────────────────────────────────── */}
       <QuoteOfTheDay />
 
+      {activeTab === "calendar" && (
+        <CalendarView 
+          sessions={trainerSessions} 
+          isLoading={trainerSessionsStatus === "loading"} 
+          onMonthChange={({ startDate, endDate }) => dispatch(fetchTrainerSessions({ startDate, endDate }))} 
+          userRole="trainer" 
+          onSessionClick={(session) => setSelectedSession(session)}
+        />
+      )}
+
+      {activeTab === "dashboard" && (
+        <>
       {/* ── Stat cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {/* Active students */}
@@ -400,6 +444,8 @@ export default function TrainerHome() {
           })}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
