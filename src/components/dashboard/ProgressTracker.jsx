@@ -4,9 +4,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 export default function ProgressTracker({ homework }) {
   const data = useMemo(() => {
     const completed = homework.filter(
-      (h) => h.status === "submitted" || h.status === "evaluated",
+      (h) => h.status?.toLowerCase() === "submitted" || h.status?.toLowerCase() === "evaluated",
     ).length;
-    const pending = homework.filter((h) => h.status === "assigned").length;
+    const pending = homework.filter((h) => h.status?.toLowerCase() === "assigned").length;
 
     return [
       { name: "Completed", value: completed, color: "#10b981" }, // emerald-500

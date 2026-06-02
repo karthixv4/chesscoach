@@ -14,6 +14,7 @@ import ViewSessionModal from "../components/modals/ViewSessionModal";
 import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import CalendarView from "../components/dashboard/CalendarView";
+import StudentSessionStats from "../components/dashboard/StudentSessionStats";
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -231,13 +232,20 @@ export default function TrainerHome() {
       <QuoteOfTheDay />
 
       {activeTab === "calendar" && (
-        <CalendarView 
-          sessions={trainerSessions} 
-          isLoading={trainerSessionsStatus === "loading"} 
-          onMonthChange={({ startDate, endDate }) => dispatch(fetchTrainerSessions({ startDate, endDate }))} 
-          userRole="trainer" 
-          onSessionClick={(session) => setSelectedSession(session)}
-        />
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="xl:col-span-3">
+            <CalendarView 
+              sessions={trainerSessions} 
+              isLoading={trainerSessionsStatus === "loading"} 
+              onMonthChange={({ startDate, endDate }) => dispatch(fetchTrainerSessions({ startDate, endDate }))} 
+              userRole="trainer" 
+              onSessionClick={(session) => setSelectedSession(session)}
+            />
+          </div>
+          <div className="xl:col-span-1">
+            <StudentSessionStats sessions={trainerSessions} isLoading={trainerSessionsStatus === "loading"} />
+          </div>
+        </div>
       )}
 
       {activeTab === "dashboard" && (

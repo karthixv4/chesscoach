@@ -15,6 +15,7 @@ import PracticeStreak from "../components/dashboard/PracticeStreak";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import ViewSessionModal from "../components/modals/ViewSessionModal";
 import CalendarView from "../components/dashboard/CalendarView";
+import EvaluationsDeck from "../components/dashboard/EvaluationsDeck";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -255,7 +256,7 @@ export default function StudentHome() {
   // Is sessions data still loading?
   // We consider sessions "loading" only while the Redux classrooms/details fetch is in-flight.
   // We do NOT gate on allSessions.length === 0 because a student may genuinely have no sessions.
-  const sessionsLoading = status === "loading" || detailsStatus === "loading";
+  const sessionsLoading = status === "loading" || detailsStatus === "loading" || studentSessionsStatus === "loading";
 
   const getUpcomingTimeInfo = (s) => {
     if (!UPCOMING_STATUSES.includes(s.status?.toUpperCase())) return null;
@@ -975,8 +976,9 @@ export default function StudentHome() {
 
             {/* ── Performance Tab ────────────────────────────────────────────── */}
             {activeTab === "performance" && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Practice Streak Card */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  {/* Practice Streak Card */}
                 <div className="space-y-6">
                   {/* Quick-log CTA */}
                   <div
@@ -1026,6 +1028,8 @@ export default function StudentHome() {
                     <ProgressTracker homework={classroom.homework || []} />
                   </div>
                 </div>
+                </div>
+                <EvaluationsDeck homework={classroom.homework} classroomId={classroom.id} />
               </div>
             )}
           </div>
