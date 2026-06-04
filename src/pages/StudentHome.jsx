@@ -16,6 +16,7 @@ import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import ViewSessionModal from "../components/modals/ViewSessionModal";
 import CalendarView from "../components/dashboard/CalendarView";
 import EvaluationsDeck from "../components/dashboard/EvaluationsDeck";
+import Markdown from "react-markdown";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -227,8 +228,8 @@ export default function StudentHome() {
     s.rescheduledDate
       ? s.rescheduledDate.split("T")[0]
       : s.date
-      ? s.date.split("T")[0]
-      : "";
+        ? s.date.split("T")[0]
+        : "";
 
   // BUG FIX: studentSessions is initialised as [] so it was always truthy,
   // preventing classroom.sessions from being used. We now prefer studentSessions
@@ -263,8 +264,8 @@ export default function StudentHome() {
     const targetDate = s.rescheduledDate
       ? s.rescheduledDate.split("T")[0]
       : s.date
-      ? s.date.split("T")[0]
-      : null;
+        ? s.date.split("T")[0]
+        : null;
     const targetTime = s.rescheduledStart || s.startTime;
     if (!targetDate || !targetTime) return null;
     const sDateTime = new Date(`${targetDate}T${targetTime}:00`);
@@ -300,8 +301,8 @@ export default function StudentHome() {
     const targetDateStr = session.rescheduledDate
       ? session.rescheduledDate.split("T")[0]
       : session.date
-      ? session.date.split("T")[0]
-      : null;
+        ? session.date.split("T")[0]
+        : null;
     const targetStart = session.rescheduledStart || session.startTime;
     const targetEnd = session.rescheduledEnd || session.endTime;
     if (!targetDateStr || !targetStart || !targetEnd) return "#";
@@ -386,13 +387,12 @@ export default function StudentHome() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
-              className={`mt-0.5 p-2 rounded-xl shrink-0 ${
-                statusKey === "completed"
+              className={`mt-0.5 p-2 rounded-xl shrink-0 ${statusKey === "completed"
                   ? "bg-emerald-500/10 text-emerald-400"
                   : statusKey === "cancelled"
-                  ? "bg-red-500/10 text-red-400"
-                  : "bg-slate-700 text-slate-400"
-              }`}
+                    ? "bg-red-500/10 text-red-400"
+                    : "bg-slate-700 text-slate-400"
+                }`}
             >
               <SessionIcon className="w-4 h-4" />
             </div>
@@ -407,8 +407,8 @@ export default function StudentHome() {
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 {displayDate
                   ? new Date(displayDate).toLocaleDateString(undefined, {
-                      weekday: "short", month: "short", day: "numeric", year: "numeric",
-                    })
+                    weekday: "short", month: "short", day: "numeric", year: "numeric",
+                  })
                   : "—"}
                 {session.startTime && (
                   <span className="text-slate-500">
@@ -420,16 +420,18 @@ export default function StudentHome() {
 
               {/* Cancellation reason */}
               {statusKey === "cancelled" && session.cancellationReason && (
-                <p className="mt-2 text-xs text-red-400 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-1.5">
+                <div className="mt-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 whitespace-pre-wrap">
                   Reason: {session.cancellationReason}
-                </p>
+                </div>
               )}
 
               {/* Session notes */}
               {statusKey === "completed" && session.notes && (
                 <div className="mt-3 text-sm text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3">
                   <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Session Notes</p>
-                  <p className="line-clamp-2">{session.notes}</p>
+                  <div className="line-clamp-2 prose prose-sm prose-invert max-w-none text-slate-300">
+                    <Markdown>{session.notes}</Markdown>
+                  </div>
                 </div>
               )}
 
@@ -458,9 +460,8 @@ export default function StudentHome() {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`w-3.5 h-3.5 ${
-                    i < session.trainerRating ? "text-amber-400 fill-amber-400" : "text-slate-600"
-                  }`}
+                  className={`w-3.5 h-3.5 ${i < session.trainerRating ? "text-amber-400 fill-amber-400" : "text-slate-600"
+                    }`}
                 />
               ))}
             </div>
@@ -513,11 +514,10 @@ export default function StudentHome() {
             onClick={() => {
               setShowLogModal(true);
             }}
-            className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${
-              todayLog
+            className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${todayLog
                 ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
                 : "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/20"
-            }`}
+              }`}
           >
             {todayLog ? (
               <><Flame className="w-4 h-4" /> Edit Log</>
@@ -581,11 +581,10 @@ export default function StudentHome() {
                   onClick={() => {
                     setActiveTab(tab.id);
                   }}
-                  className={`relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    isActive
+                  className={`relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${isActive
                       ? "text-white"
                       : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
-                  }`}
+                    }`}
                 >
                   {isActive && (
                     <motion.div
@@ -611,22 +610,20 @@ export default function StudentHome() {
                 <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => setScheduleSubTab("calendar")}
-                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      scheduleSubTab === "calendar"
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${scheduleSubTab === "calendar"
                         ? "text-blue-400 border-b-2 border-blue-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
-                    }`}
+                      }`}
                   >
                     <Calendar className="w-4 h-4" />
                     Calendar
                   </button>
                   <button
                     onClick={() => setScheduleSubTab("upcoming")}
-                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      scheduleSubTab === "upcoming"
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${scheduleSubTab === "upcoming"
                         ? "text-blue-400 border-b-2 border-blue-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
-                    }`}
+                      }`}
                   >
                     <Clock className="w-4 h-4" />
                     Upcoming
@@ -638,11 +635,10 @@ export default function StudentHome() {
                   </button>
                   <button
                     onClick={() => setScheduleSubTab("past")}
-                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      scheduleSubTab === "past"
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${scheduleSubTab === "past"
                         ? "text-slate-200 border-b-2 border-slate-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
-                    }`}
+                      }`}
                   >
                     <History className="w-4 h-4" />
                     Past
@@ -665,11 +661,11 @@ export default function StudentHome() {
                       transition={{ duration: 0.2 }}
                       className="border-t border-slate-700/50"
                     >
-                      <CalendarView 
-                        sessions={allSessions} 
-                        isLoading={studentSessionsStatus === "loading"} 
-                        onMonthChange={({ startDate, endDate }) => dispatch(fetchStudentSessions({ studentId: user.id, startDate, endDate }))} 
-                        userRole="student" 
+                      <CalendarView
+                        sessions={allSessions}
+                        isLoading={studentSessionsStatus === "loading"}
+                        onMonthChange={({ startDate, endDate }) => dispatch(fetchStudentSessions({ studentId: user.id, startDate, endDate }))}
+                        userRole="student"
                         onSessionClick={(session) => setSelectedSession(session)}
                       />
                     </motion.div>
@@ -732,15 +728,15 @@ export default function StudentHome() {
                                   {["SCHEDULED", "POSTPONED", "PREPONED"].includes(
                                     session.status?.toUpperCase()
                                   ) && (
-                                    <a
-                                      href={getGoogleCalendarUrl(session)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-                                    >
-                                      <CalendarPlus className="w-4 h-4" /> Add to Calendar
-                                    </a>
-                                  )}
+                                      <a
+                                        href={getGoogleCalendarUrl(session)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                                      >
+                                        <CalendarPlus className="w-4 h-4" /> Add to Calendar
+                                      </a>
+                                    )}
                                   {session.link && (
                                     <a
                                       href={session.link}
@@ -806,11 +802,10 @@ export default function StudentHome() {
                 <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => setAssignmentSubTab("pending")}
-                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      assignmentSubTab === "pending"
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${assignmentSubTab === "pending"
                         ? "text-orange-400 border-b-2 border-orange-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
-                    }`}
+                      }`}
                   >
                     <Clock className="w-4 h-4" />
                     Pending Tasks
@@ -822,11 +817,10 @@ export default function StudentHome() {
                   </button>
                   <button
                     onClick={() => setAssignmentSubTab("completed")}
-                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      assignmentSubTab === "completed"
+                    className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${assignmentSubTab === "completed"
                         ? "text-emerald-400 border-b-2 border-emerald-400 -mb-px"
                         : "text-slate-400 hover:text-slate-200"
-                    }`}
+                      }`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Completed
@@ -883,19 +877,26 @@ export default function StudentHome() {
                                   {hw.title}
                                 </h3>
                                 <div className="flex items-center flex-wrap gap-3 mt-2">
-                                  <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize">
+                                  <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize flex-wrap">
                                     <FileText className="w-4 h-4" />
                                     {hw.type} Challenge
                                   </p>
-                                  {dueText && (
-                                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full animate-pulse flex items-center gap-1 ${
-                                      dueText === "Overdue" 
-                                        ? "bg-red-500/10 text-red-400 border border-red-500/20" 
-                                        : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                                    }`}>
-                                      <Clock className="w-3 h-3" /> {dueText}
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {hw.createdAt && (
+                                      <span className="px-2.5 py-1 bg-slate-800/80 text-slate-400 border border-slate-700/50 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                                        <CalendarPlus className="w-3.5 h-3.5" />
+                                        Assigned: {new Date(hw.createdAt).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                    {dueText && (
+                                      <span className={`px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm ${dueText === "Overdue"
+                                          ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                          : "bg-orange-500/10 text-orange-400 border border-orange-500/20 animate-pulse"
+                                        }`}>
+                                        <Clock className="w-3.5 h-3.5" /> {dueText}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
@@ -947,16 +948,22 @@ export default function StudentHome() {
                               <h3 className="font-medium text-lg group-hover:text-emerald-400 transition-colors">
                                 {hw.title}
                               </h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-sm text-slate-400 capitalize">
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                <span className="text-sm text-slate-400 capitalize flex items-center gap-1.5">
+                                  <FileText className="w-4 h-4" />
                                   {hw.type} Challenge
                                 </span>
+                                {hw.createdAt && (
+                                  <span className="px-2.5 py-1 bg-slate-800/80 text-slate-400 border border-slate-700/50 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                                    <CalendarPlus className="w-3.5 h-3.5" />
+                                    Assigned: {new Date(hw.createdAt).toLocaleDateString()}
+                                  </span>
+                                )}
                                 <span
-                                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                    hw.status?.toLowerCase() === "evaluated"
-                                      ? "bg-emerald-500/20 text-emerald-400"
-                                      : "bg-amber-500/20 text-amber-400"
-                                  }`}
+                                  className={`px-2.5 py-1 rounded-md text-xs font-medium border shadow-sm ${hw.status?.toLowerCase() === "evaluated"
+                                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                      : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                    }`}
                                 >
                                   {hw.status?.toLowerCase() === "submitted"
                                     ? "Pending Evaluation"
@@ -979,55 +986,54 @@ export default function StudentHome() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   {/* Practice Streak Card */}
-                <div className="space-y-6">
-                  {/* Quick-log CTA */}
-                  <div
-                    onClick={() => setShowLogModal(true)}
-                    className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${
-                      todayLog
-                        ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
-                        : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
-                    }`}
-                  >
-                    <div>
-                      <p className="font-semibold text-white">
-                        {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
-                      </p>
-                      <p className="text-sm text-slate-400 mt-0.5">
-                        {todayLog
-                          ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
-                          : "Tap to log your practice — takes under 1 minute"}
-                      </p>
+                  <div className="space-y-6">
+                    {/* Quick-log CTA */}
+                    <div
+                      onClick={() => setShowLogModal(true)}
+                      className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${todayLog
+                          ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                          : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
+                        }`}
+                    >
+                      <div>
+                        <p className="font-semibold text-white">
+                          {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
+                        </p>
+                        <p className="text-sm text-slate-400 mt-0.5">
+                          {todayLog
+                            ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
+                            : "Tap to log your practice — takes under 1 minute"}
+                        </p>
+                      </div>
+                      {todayLog ? (
+                        <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
+                      ) : (
+                        <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
+                      )}
                     </div>
-                    {todayLog ? (
-                      <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
-                    ) : (
-                      <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
-                    )}
+
+                    {/* Streak + dot matrix */}
+                    <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
+                      <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-400" />
+                        Your Streak
+                      </h2>
+                      <div className="flex-1">
+                        <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Streak + dot matrix */}
+                  {/* Progress Tracker Card */}
                   <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
                     <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                      <Flame className="w-5 h-5 text-orange-400" />
-                      Your Streak
+                      <BookOpen className="w-5 h-5 text-blue-400" />
+                      Homework Progress
                     </h2>
                     <div className="flex-1">
-                      <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                      <ProgressTracker homework={classroom.homework || []} />
                     </div>
                   </div>
-                </div>
-
-                {/* Progress Tracker Card */}
-                <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
-                  <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-blue-400" />
-                    Homework Progress
-                  </h2>
-                  <div className="flex-1">
-                    <ProgressTracker homework={classroom.homework || []} />
-                  </div>
-                </div>
                 </div>
                 <EvaluationsDeck homework={classroom.homework} classroomId={classroom.id} />
               </div>

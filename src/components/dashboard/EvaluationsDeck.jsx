@@ -1,4 +1,5 @@
 import { Star, ChevronRight, MessageSquare, Award } from "lucide-react";
+import Markdown from "react-markdown";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -18,7 +19,7 @@ export default function EvaluationsDeck({ homework, classroomId }) {
           <Award className="w-5 h-5 text-amber-400" />
           Recent Evaluations
         </h2>
-        <button 
+        <button
           onClick={() => navigate(`/classroom/${classroomId}?tab=evaluations`)}
           className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
         >
@@ -42,14 +43,13 @@ export default function EvaluationsDeck({ homework, classroomId }) {
                 {hw.type}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-1 mb-3">
               {[...Array(5)].map((_, idx) => (
                 <Star
                   key={idx}
-                  className={`w-4 h-4 ${
-                    idx < (hw.score || 0) ? "text-amber-400 fill-amber-400" : "text-slate-600"
-                  }`}
+                  className={`w-4 h-4 ${idx < (hw.score || 0) ? "text-amber-400 fill-amber-400" : "text-slate-600"
+                    }`}
                 />
               ))}
               <span className="text-xs text-slate-400 ml-2">Score</span>
@@ -58,9 +58,9 @@ export default function EvaluationsDeck({ homework, classroomId }) {
             <div className="flex-1 bg-slate-800/50 rounded-lg p-3 text-sm text-slate-300 border border-slate-700/50">
               <div className="flex gap-2 items-start">
                 <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <p className="line-clamp-3 italic">
-                  "{hw.feedback || "Great effort!"}"
-                </p>
+                <div className="line-clamp-3 italic prose prose-sm prose-invert max-w-none text-slate-300">
+                  <Markdown>{hw.feedback || "Great effort!"}</Markdown>
+                </div>
               </div>
             </div>
           </motion.div>

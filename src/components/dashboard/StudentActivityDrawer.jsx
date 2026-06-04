@@ -10,7 +10,7 @@ import PracticeStreak from "./PracticeStreak";
 
 const CATEGORY_COLORS = {
   OPENINGS: { bar: "bg-blue-500", text: "text-blue-400", bg: "bg-blue-500/10" },
-  TACTICS:  { bar: "bg-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
+  TACTICS: { bar: "bg-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
   ENDGAMES: { bar: "bg-purple-500", text: "text-purple-400", bg: "bg-purple-500/10" },
 };
 
@@ -89,9 +89,9 @@ export default function StudentActivityDrawer({ classroom, onClose }) {
 
   const maxLogs = summary
     ? Math.max(
-        ...Object.values(summary.breakdownByCategory || {}).map((c) => c.logs),
-        1
-      )
+      ...Object.values(summary.breakdownByCategory || {}).map((c) => c.logs),
+      1
+    )
     : 1;
 
   return (
@@ -256,9 +256,9 @@ export default function StudentActivityDrawer({ classroom, onClose }) {
                               <span className="text-slate-600 text-xs">
                                 {log.date
                                   ? new Date(log.date).toLocaleDateString(undefined, {
-                                      month: "short",
-                                      day: "numeric",
-                                    })
+                                    month: "short",
+                                    day: "numeric",
+                                  })
                                   : "—"}
                               </span>
                               {log.gamesPlayed != null && (

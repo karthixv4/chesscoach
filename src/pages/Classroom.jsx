@@ -38,6 +38,7 @@ import {
 } from "../store/classroomsSlice";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import Markdown from "react-markdown";
+import MarkdownEditor from "../components/common/MarkdownEditor";
 import AssignHomeworkModal from "../components/dashboard/AssignHomeworkModal";
 import ScheduleSessionModal from "../components/modals/ScheduleSessionModal";
 import UpdateSessionStatusModal from "../components/modals/UpdateSessionStatusModal";
@@ -66,10 +67,10 @@ const PDFViewer = ({ fileUrl }) => {
         <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors rounded-lg border border-slate-600/50">Open in New Tab</a>
       </div>
       <div className="flex-1 flex flex-col bg-slate-800 relative min-h-[500px]">
-        <iframe 
-          src={embedUrl} 
-          className="w-full h-full bg-slate-200 border-0 flex-1" 
-          title="Assignment Work" 
+        <iframe
+          src={embedUrl}
+          className="w-full h-full bg-slate-200 border-0 flex-1"
+          title="Assignment Work"
         />
       </div>
     </div>
@@ -438,7 +439,7 @@ export default function Classroom() {
                     <p className="text-xs text-red-400 font-medium uppercase mb-1">
                       Cancellation Reason
                     </p>
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-slate-300 whitespace-pre-wrap">
                       {session.cancellationReason}
                     </p>
                   </div>
@@ -468,9 +469,9 @@ export default function Classroom() {
                           <p className="text-xs text-slate-400 font-medium uppercase mb-1">
                             Session Notes
                           </p>
-                          <p className="text-sm text-slate-300 line-clamp-2">
-                            {session.notes}
-                          </p>
+                          <div className="text-sm text-slate-300 line-clamp-2 prose prose-sm prose-invert max-w-none">
+                            <Markdown>{session.notes}</Markdown>
+                          </div>
                         </div>
                       )}
                       {session.materials && session.materials.length > 0 && (
@@ -676,9 +677,26 @@ export default function Classroom() {
                   <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
                     <div>
                       <h3 className="text-xl font-semibold">{hw.title}</h3>
-                      <p className="text-sm text-slate-400 capitalize">
-                        {hw.type} Challenge • Status: {hw.status}
-                      </p>
+                      <div className="flex items-center flex-wrap gap-3 mt-2">
+                        <p className="text-sm text-slate-400 flex items-center gap-1.5 capitalize">
+                          <FileText className="w-4 h-4" />
+                          {hw.type} Challenge
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {hw.createdAt && (
+                            <span className="px-2.5 py-1 bg-slate-800/80 text-slate-400 border border-slate-700/50 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                              <CalendarPlus className="w-3.5 h-3.5" />
+                              Assigned: {new Date(hw.createdAt).toLocaleDateString()}
+                            </span>
+                          )}
+                          {hw.dueDate && (
+                            <span className="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                              <Clock className="w-3.5 h-3.5" />
+                              Due: {new Date(hw.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       {isTrainer && (
@@ -1079,12 +1097,10 @@ export default function Classroom() {
                               ))}
                             </div>
                           </div>
-                          <textarea
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
-                            placeholder="Provide feedback..."
-                            rows={3}
+                          <MarkdownEditor
                             value={feedbackText}
-                            onChange={(e) => setFeedbackText(e.target.value)}
+                            onChange={(val) => setFeedbackText(val)}
+                            placeholder="Provide feedback... Use markdown for formatting."
                           />
 
                           <div className="flex justify-end gap-2">
@@ -1116,9 +1132,9 @@ export default function Classroom() {
                           <h4 className="text-sm font-medium text-blue-400 mb-2">
                             Trainer Feedback
                           </h4>
-                          <p className="text-slate-300 text-sm">
-                            {hw.feedback}
-                          </p>
+                          <div className="prose prose-sm prose-invert max-w-none text-slate-300">
+                            <Markdown>{hw.feedback}</Markdown>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1314,7 +1330,7 @@ export default function Classroom() {
           />
         )}
 
-{isScheduleModalOpen && (
+        {isScheduleModalOpen && (
           <ScheduleSessionModal
             key="schedule-modal"
             classroomId={classroom.id}
@@ -1338,7 +1354,7 @@ export default function Classroom() {
           />
         )}
 
-{isMaterialModalOpen && (
+        {isMaterialModalOpen && (
           <AddMaterialModal
             key="material-modal"
             classroomId={classroom.id}

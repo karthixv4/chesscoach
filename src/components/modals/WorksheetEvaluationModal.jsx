@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, Star, Image as ImageIcon, Loader2 } from "lucide-react";
+import MarkdownEditor from "../common/MarkdownEditor";
 
 export default function WorksheetEvaluationModal({ isOpen, onClose, homework, onSubmit }) {
   const [trainerIdx, setTrainerIdx] = useState(0);
@@ -58,20 +59,20 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
       <div className="flex-1 min-h-[250px] relative bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden flex items-center justify-center group">
         {images.length > 0 ? (
           <>
-            <img 
-              src={images[currentIndex]} 
-              alt={`${title}-${currentIndex}`} 
+            <img
+              src={images[currentIndex]}
+              alt={`${title}-${currentIndex}`}
               className="w-full h-full object-contain"
             />
             {images.length > 1 && (
               <>
-                <button 
+                <button
                   onClick={onPrev}
                   className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={onNext}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
@@ -93,7 +94,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
   return (
     <AnimatePresence>
       {(isOpen && homework) && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -123,7 +124,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="flex flex-col lg:flex-row gap-6 h-full min-h-[500px]">
-                
+
                 {/* Left Side: Trainer's Assignment */}
                 {!isPuzzle && (
                   <div className="w-full lg:w-1/2 flex flex-col">
@@ -138,20 +139,20 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                           </div>
                           <div className="flex-1 min-h-[400px] w-full rounded-2xl border-2 border-slate-700/50 bg-slate-900 flex flex-col overflow-hidden">
                             <div className="flex-1 flex flex-col bg-slate-800 relative">
-                              <iframe 
-                                src={embedUrl} 
-                                className="w-full h-full bg-slate-200 flex-1 border-0" 
-                                title="Assignment Work" 
+                              <iframe
+                                src={embedUrl}
+                                className="w-full h-full bg-slate-200 flex-1 border-0"
+                                title="Assignment Work"
                               />
                             </div>
                           </div>
                         </>
                       ) : (
-                        <Carousel 
-                          images={trainerImages} 
-                          currentIndex={trainerIdx} 
-                          onNext={handleTrainerNext} 
-                          onPrev={handleTrainerPrev} 
+                        <Carousel
+                          images={trainerImages}
+                          currentIndex={trainerIdx}
+                          onNext={handleTrainerNext}
+                          onPrev={handleTrainerPrev}
                           title="Assignment Reference"
                         />
                       )}
@@ -161,23 +162,23 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
 
                 {/* Right Side: Student Submission & Evaluation */}
                 <div className={`w-full ${isPuzzle ? 'lg:w-full' : 'lg:w-1/2'} flex flex-col gap-6`}>
-                  
+
                   {/* Top Right: Student Evidence */}
                   <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex-1 min-h-0 mb-3">
-                      <Carousel 
-                        images={studentImages} 
-                        currentIndex={studentIdx} 
-                        onNext={handleStudentNext} 
-                        onPrev={handleStudentPrev} 
+                      <Carousel
+                        images={studentImages}
+                        currentIndex={studentIdx}
+                        onNext={handleStudentNext}
+                        onPrev={handleStudentPrev}
                         title="Student Submission"
                       />
                     </div>
                     {homework.submission && (
-                       <div className="flex-none bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
-                         <p className="text-xs font-medium text-slate-400 uppercase mb-1 sticky top-0 bg-slate-900 pb-1">Text Submission:</p>
-                         <p className="text-sm text-slate-300 whitespace-pre-wrap">{homework.submission}</p>
-                       </div>
+                      <div className="flex-none bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
+                        <p className="text-xs font-medium text-slate-400 uppercase mb-1 sticky top-0 bg-slate-900 pb-1">Text Submission:</p>
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{homework.submission}</p>
+                      </div>
                     )}
                   </div>
 
@@ -186,7 +187,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                     <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
                       {homework?.status === 'evaluated' ? 'Edit Evaluation' : 'Grade Submission'}
                     </h3>
-                    
+
                     <div className="flex items-center gap-4 mb-4">
                       <span className="text-sm font-medium text-slate-400">Score:</span>
                       <div className="flex items-center gap-1">
@@ -194,9 +195,8 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                           <button
                             key={star}
                             onClick={() => setScore(star)}
-                            className={`p-1 transition-colors ${
-                              star <= score ? "text-amber-400" : "text-slate-600 hover:text-amber-400/50"
-                            }`}
+                            className={`p-1 transition-colors ${star <= score ? "text-amber-400" : "text-slate-600 hover:text-amber-400/50"
+                              }`}
                           >
                             <Star className={`w-8 h-8 ${star <= score ? "fill-current" : ""}`} />
                           </button>
@@ -204,12 +204,11 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                       </div>
                     </div>
 
-                    <textarea
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none placeholder:text-slate-500"
-                      placeholder="Provide constructive feedback for the student..."
-                      rows={3}
+                    <MarkdownEditor
                       value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
+                      onChange={(val) => setFeedback(val)}
+                      placeholder="Provide constructive feedback for the student... Use markdown for formatting."
+                      minHeight="120px"
                     />
 
                     <div className="flex justify-end gap-3 mt-4">

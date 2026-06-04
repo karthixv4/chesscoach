@@ -3,6 +3,7 @@ import { X, Upload, LayoutGrid, RotateCcw, Users, ImagePlus, Loader2, Calendar, 
 import { useDispatch, useSelector } from "react-redux";
 import { createHomework, updateHomework } from "../../store/classroomsSlice";
 import { uploadImages } from "../../lib/cloudinaryService";
+import MarkdownEditor from "../common/MarkdownEditor";
 
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
@@ -121,7 +122,7 @@ export default function AssignHomeworkModal({
         if (newGame.fen() !== game.fen()) {
           setGame(newGame);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [fen, isRecording]);
 
@@ -284,8 +285,8 @@ export default function AssignHomeworkModal({
           </div>
         </div>
       )}
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden my-8">
-        <div className="flex justify-between items-center p-6 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden my-8 flex flex-col max-h-[90vh]">
+        <div className="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-800 z-10 shrink-0">
           <h2 className="text-xl font-semibold text-white">Assign Homework</h2>
           <button
             onClick={onClose}
@@ -295,8 +296,9 @@ export default function AssignHomeworkModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">
                 Select Student
@@ -375,11 +377,10 @@ export default function AssignHomeworkModal({
                 <button
                   type="button"
                   onClick={() => setType("worksheet")}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${
-                    type === "worksheet"
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${type === "worksheet"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
                       : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600"
-                  }`}
+                    }`}
                 >
                   <Upload className="w-6 h-6 mb-2" />
                   <span className="font-medium text-sm text-center">Worksheet</span>
@@ -387,11 +388,10 @@ export default function AssignHomeworkModal({
                 <button
                   type="button"
                   onClick={() => setType("board")}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${
-                    type === "board"
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${type === "board"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
                       : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600"
-                  }`}
+                    }`}
                 >
                   <LayoutGrid className="w-6 h-6 mb-2" />
                   <span className="font-medium text-sm text-center">Board</span>
@@ -399,11 +399,10 @@ export default function AssignHomeworkModal({
                 <button
                   type="button"
                   onClick={() => setType("puzzle")}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${
-                    type === "puzzle"
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-colors ${type === "puzzle"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
                       : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600"
-                  }`}
+                    }`}
                 >
                   <LinkIcon className="w-6 h-6 mb-2" />
                   <span className="font-medium text-sm text-center">Puzzles</span>
@@ -415,11 +414,11 @@ export default function AssignHomeworkModal({
               <label className="block text-sm font-medium text-slate-300 mb-1">
                 Description / Instructions
               </label>
-              <textarea
+              <MarkdownEditor
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none h-24"
+                onChange={(val) => setDescription(val)}
                 placeholder="Explain what the student needs to do..."
+                minHeight="120px"
               />
             </div>
 
@@ -437,7 +436,7 @@ export default function AssignHomeworkModal({
                     <Plus className="w-4 h-4" /> Add Link
                   </button>
                 </div>
-                
+
                 {puzzleSets.length === 0 ? (
                   <div className="text-center p-6 border border-dashed border-slate-700 rounded-xl text-slate-500">
                     Click "Add Link" to assign puzzles.
@@ -453,7 +452,7 @@ export default function AssignHomeworkModal({
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        
+
                         <div>
                           <label className="block text-xs font-medium text-slate-400 mb-1">Puzzle Link</label>
                           <input
@@ -465,7 +464,7 @@ export default function AssignHomeworkModal({
                             placeholder="https://lichess.org/training/tactics"
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-slate-400 mb-1">No. Puzzles</label>
@@ -725,24 +724,25 @@ export default function AssignHomeworkModal({
               Add Images
             </button>
           </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 sticky bottom-0 bg-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-slate-300 hover:text-white transition-colors font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? "Saving..." : "Assign Homework"}
-            </button>
           </div>
-        </form>
+
+          <div className="flex justify-end gap-3 p-6 border-t border-slate-700 bg-slate-800 shrink-0">
+            <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-slate-300 hover:text-white transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : "Assign Homework"}
+              </button>
+            </div>
+          </form>
       </div>
     </div>
   );

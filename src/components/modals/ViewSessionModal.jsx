@@ -12,11 +12,11 @@ export default function ViewSessionModal({
   onImageClick
 }) {
   const dispatch = useDispatch();
-  
+
   const { classrooms, studentSessions, trainerSessions } = useSelector((state) => state.classrooms);
-  
+
   const classroom = classrooms.find(c => c.id === classroomId);
-  const session = classroom?.sessions?.find(s => s.id === sessionId) 
+  const session = classroom?.sessions?.find(s => s.id === sessionId)
     || studentSessions.find(s => s.id === sessionId)
     || trainerSessions.find(s => s.id === sessionId);
 
@@ -154,27 +154,27 @@ export default function ViewSessionModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {materials.map((mat) => {
                       if (mat.type?.toLowerCase() === "image" && mat.url) {
-                         const images = mat.url.split(",").filter(Boolean);
-                         if (images.length > 0) {
-                           return (
-                             <div key={mat.id} className="flex flex-col gap-2 p-3 bg-slate-900 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition-colors">
-                                <span className="text-sm font-medium text-slate-300 truncate">{mat.title}</span>
-                                <div className="flex flex-wrap gap-2">
-                                  {images.map((src, i) => (
-                                     <img
-                                       key={`${mat.id}-${i}`}
-                                       src={src}
-                                       alt={mat.title}
-                                       className="h-10 w-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                       onClick={() => onImageClick ? onImageClick(src) : window.open(src, '_blank')}
-                                     />
-                                  ))}
-                                </div>
-                             </div>
-                           )
-                         }
+                        const images = mat.url.split(",").filter(Boolean);
+                        if (images.length > 0) {
+                          return (
+                            <div key={mat.id} className="flex flex-col gap-2 p-3 bg-slate-900 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition-colors">
+                              <span className="text-sm font-medium text-slate-300 truncate">{mat.title}</span>
+                              <div className="flex flex-wrap gap-2">
+                                {images.map((src, i) => (
+                                  <img
+                                    key={`${mat.id}-${i}`}
+                                    src={src}
+                                    alt={mat.title}
+                                    className="h-10 w-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => onImageClick ? onImageClick(src) : window.open(src, '_blank')}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        }
                       }
-                      
+
                       return (
                         <a
                           key={mat.id}
@@ -211,7 +211,7 @@ export default function ViewSessionModal({
                       >
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg">
-                             <CheckSquare className="w-4 h-4" />
+                            <CheckSquare className="w-4 h-4" />
                           </div>
                           <div>
                             <p className="text-sm font-medium text-slate-200 truncate">{hw.title}</p>
@@ -234,7 +234,7 @@ export default function ViewSessionModal({
               )}
             </div>
           ) : (
-             <div className="p-8 text-center text-slate-400">Loading session...</div>
+            <div className="p-8 text-center text-slate-400">Loading session...</div>
           )}
         </motion.div>
       </div>

@@ -229,9 +229,16 @@ const initialState = {
 };
 
 const updateActiveIfMatch = (state, classroomId, updateFn) => {
+  let updatedActive = false;
   const c1 = state.classrooms.find(c => c.id === classroomId);
-  if (c1) updateFn(c1);
-  if (state.activeClassroom?.id === classroomId) {
+  if (c1) {
+    updateFn(c1);
+    // If activeClassroom is the exact same object reference, it was updated.
+    if (state.activeClassroom === c1) {
+      updatedActive = true;
+    }
+  }
+  if (!updatedActive && state.activeClassroom?.id === classroomId) {
     updateFn(state.activeClassroom);
   }
 };
@@ -307,7 +314,8 @@ const classroomsSlice = createSlice({
 
     builder.addCase(createSession.fulfilled, (state, action) => {
       updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        c.sessions.push(action.payload.session);
+        if (!c.sessions) c.sessions = [];
+        c.sessions.unshift(action.payload.session);
       });
     });
     builder.addCase(updateSession.fulfilled, (state, action) => {
@@ -354,7 +362,8 @@ const classroomsSlice = createSlice({
     // Homework
     builder.addCase(createHomework.fulfilled, (state, action) => {
       updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        c.homework.push(action.payload.homework);
+        if (!c.homework) c.homework = [];
+        c.homework.unshift(action.payload.homework);
       });
     });
     builder.addCase(updateHomework.fulfilled, (state, action) => {
@@ -384,7 +393,8 @@ const classroomsSlice = createSlice({
     // Materials
     builder.addCase(createMaterial.fulfilled, (state, action) => {
       updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        c.materials.push(action.payload.material);
+        if (!c.materials) c.materials = [];
+        c.materials.unshift(action.payload.material);
       });
     });
     builder.addCase(updateMaterial.fulfilled, (state, action) => {

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { X, BookOpen, Calendar, Video, Code, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { createLesson, updateLesson } from "../../store/classroomsSlice";
+import MarkdownEditor from "../common/MarkdownEditor";
 
 export default function AddLessonModal({ onClose, classroomId, lesson }) {
   const dispatch = useDispatch();
@@ -63,9 +64,9 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden my-8"
+        className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden my-8 flex flex-col max-h-[90vh]"
       >
-        <div className="p-4 sm:p-6 border-b border-slate-700 flex justify-between items-center sticky top-0 bg-slate-800 z-10">
+        <div className="p-4 sm:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-10 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
               <BookOpen className="w-5 h-5" />
@@ -82,8 +83,9 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1.5">
                 Lesson Title
@@ -132,12 +134,11 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
             <label className="block text-sm font-medium text-slate-400 mb-1.5">
               Detailed Notes (Markdown supported)
             </label>
-            <textarea
+            <MarkdownEditor
               value={detailedNotes}
-              onChange={(e) => setDetailedNotes(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors font-mono text-sm"
-              rows={6}
-              placeholder="# Lesson Topics\n\n- Topic 1\n- Topic 2..."
+              onChange={(val) => setDetailedNotes(val)}
+              placeholder="## Lesson Topics\n\n- Topic 1\n- Topic 2..."
+              minHeight="150px"
             />
           </div>
 
@@ -174,7 +175,7 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
             </div>
           </div>
 
-          <div className="pt-4 flex gap-3 sticky bottom-0 bg-slate-800 pb-2">
+          <div className="p-4 sm:p-6 flex gap-3 bg-slate-800 border-t border-slate-700 shrink-0">
             <button
               type="button"
               onClick={onClose}
