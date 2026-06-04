@@ -896,6 +896,9 @@ export default function StudentHome() {
                                         <Clock className="w-3.5 h-3.5" /> {dueText}
                                       </span>
                                     )}
+                                    <span className="px-2.5 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-md text-xs font-medium shadow-sm">
+                                      Assigned
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -959,6 +962,12 @@ export default function StudentHome() {
                                     Assigned: {new Date(hw.createdAt).toLocaleDateString()}
                                   </span>
                                 )}
+                                {hw.submittedAt && (
+                                  <span className="px-2.5 py-1 bg-slate-800/80 text-slate-400 border border-slate-700/50 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                                    <CheckSquare className="w-3.5 h-3.5" />
+                                    Submitted: {new Date(hw.submittedAt).toLocaleDateString()}
+                                  </span>
+                                )}
                                 <span
                                   className={`px-2.5 py-1 rounded-md text-xs font-medium border shadow-sm ${hw.status?.toLowerCase() === "evaluated"
                                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
@@ -966,7 +975,7 @@ export default function StudentHome() {
                                     }`}
                                 >
                                   {hw.status?.toLowerCase() === "submitted"
-                                    ? "Pending Evaluation"
+                                    ? "Submitted"
                                     : "Evaluated"}
                                 </span>
                               </div>

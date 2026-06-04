@@ -695,6 +695,12 @@ export default function Classroom() {
                               Due: {new Date(hw.dueDate).toLocaleDateString()}
                             </span>
                           )}
+                          {hw.submittedAt && (
+                            <span className="px-2.5 py-1 bg-slate-800/80 text-slate-400 border border-slate-700/50 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              Submitted: {new Date(hw.submittedAt).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -727,17 +733,17 @@ export default function Classroom() {
                           </button>
                         </div>
                       )}
-                      {!isTrainer && hw.status?.toLowerCase() === "assigned" && (
+                      {hw.status?.toLowerCase() === "assigned" && (
                         <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-medium">
-                          Pending
+                          Assigned
                         </span>
                       )}
-                      {!isTrainer && hw.status?.toLowerCase() === "submitted" && (
+                      {hw.status?.toLowerCase() === "submitted" && (
                         <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium">
-                          Pending Evaluation
+                          Submitted
                         </span>
                       )}
-                      {!isTrainer && hw.status?.toLowerCase() === "evaluated" && (
+                      {hw.status?.toLowerCase() === "evaluated" && (
                         <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-medium">
                           Evaluated
                         </span>
