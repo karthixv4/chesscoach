@@ -118,6 +118,8 @@ export default function Classroom() {
   const [submissionFiles, setSubmissionFiles] = useState({}); // hwId -> File[]
   const [submissionPreviews, setSubmissionPreviews] = useState({}); // hwId -> string[]
   const [submissionTexts, setSubmissionTexts] = useState({}); // hwId -> string
+  const [editingSubmissions, setEditingSubmissions] = useState({}); // hwId -> boolean
+  const [keptExistingImages, setKeptExistingImages] = useState({}); // hwId -> string[]
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submissionFileRefs = useRef({});
 
@@ -211,11 +213,13 @@ export default function Classroom() {
 
   const handleSubmitHomework = async (hw, submission) => {
     const files = submissionFiles[hw.id] || [];
+    const keptImages = keptExistingImages[hw.id] || [];
     setIsSubmitting(true);
     try {
-      let imageUrls = [];
+      let imageUrls = [...keptImages];
       if (files.length > 0) {
-        imageUrls = await uploadImages(files);
+        const newUploads = await uploadImages(files);
+        imageUrls = [...imageUrls, ...newUploads];
       }
       dispatch(submitHomework({
         classroomId: classroom.id,
@@ -224,6 +228,7 @@ export default function Classroom() {
       }));
       setSubmissionFiles((prev) => ({ ...prev, [hw.id]: [] }));
       setSubmissionPreviews((prev) => ({ ...prev, [hw.id]: [] }));
+      setEditingSubmissions((prev) => ({ ...prev, [hw.id]: false }));
     } catch (err) {
       alert(`Upload failed: ${err.message}`);
     } finally {
@@ -243,6 +248,13 @@ export default function Classroom() {
       [hwId]: (prev[hwId] || []).filter((_, i) => i !== index),
     }));
     setSubmissionPreviews((prev) => ({
+      ...prev,
+      [hwId]: (prev[hwId] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleRemoveKeptImage = (hwId, index) => {
+    setKeptExistingImages((prev) => ({
       ...prev,
       [hwId]: (prev[hwId] || []).filter((_, i) => i !== index),
     }));
@@ -847,13 +859,13 @@ export default function Classroom() {
                     )}
 
                     {!isTrainer &&
-                      hw.status?.toLowerCase() === "assigned" &&
+                      (hw.status?.toLowerCase() === "assigned" || (hw.status?.toLowerCase() === "submitted" && editingSubmissions[hw.id])) &&
                       hw.type?.toLowerCase() !== "board" && (
                         <div className="mt-6 space-y-4">
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-300">Your Answer</label>
                             <textarea
-                              value={submissionTexts[hw.id] || ""}
+                              value={submissionTexts[hw.id] ?? (hw.submission || "")}
                               onChange={(e) => setSubmissionTexts(prev => ({ ...prev, [hw.id]: e.target.value }))}
                               placeholder="Type your answer here..."
                               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 resize-none h-24 mb-4 text-sm"
@@ -868,10 +880,20 @@ export default function Classroom() {
                               className="hidden"
                               onChange={(e) => handlePickSubmissionImages(hw.id, e.target.files)}
                             />
-                            {(submissionPreviews[hw.id] || []).length > 0 && (
+                            {((submissionPreviews[hw.id] || []).length > 0 || (keptExistingImages[hw.id] || []).length > 0) && (
                               <div className="flex flex-wrap gap-3">
+                                {(keptExistingImages[hw.id] || []).map((src, i) => (
+                                  <div key={`kept-${i}`} className="relative group">
+                                    <img src={src} alt={`sub-kept-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveKeptImage(hw.id, i)}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >×</button>
+                                  </div>
+                                ))}
                                 {(submissionPreviews[hw.id] || []).map((src, i) => (
-                                  <div key={i} className="relative group">
+                                  <div key={`new-${i}`} className="relative group">
                                     <img src={src} alt={`sub-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
                                     <button
                                       type="button"
@@ -890,30 +912,56 @@ export default function Classroom() {
                               <ImagePlus className="w-3 h-3" /> Add Images
                             </button>
                           </div>
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-2">
+                            {editingSubmissions[hw.id] && (
+                              <button
+                                disabled={isSubmitting}
+                                onClick={() => {
+                                  setEditingSubmissions(prev => ({ ...prev, [hw.id]: false }));
+                                  setSubmissionTexts(prev => ({ ...prev, [hw.id]: undefined }));
+                                }}
+                                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-medium transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            )}
                             <button
-                              disabled={isSubmitting || (!submissionTexts[hw.id]?.trim() && !(submissionFiles[hw.id]?.length > 0))}
+                              disabled={isSubmitting || (!(submissionTexts[hw.id] ?? hw.submission)?.trim() && !(submissionFiles[hw.id]?.length > 0) && !(keptExistingImages[hw.id]?.length > 0))}
                               onClick={() => {
-                                handleSubmitHomework(hw, submissionTexts[hw.id] || "Submitted evidence images.");
+                                handleSubmitHomework(hw, (submissionTexts[hw.id] ?? hw.submission) || "Submitted evidence images.");
                                 setSubmissionTexts(prev => ({ ...prev, [hw.id]: "" }));
                               }}
                               className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                              Mark as Completed
+                              {editingSubmissions[hw.id] ? "Update Submission" : "Mark as Completed"}
                             </button>
                           </div>
                         </div>
                       )}
 
                     {/* Evaluation Report – visible to students */}
-                    {!isTrainer && hw.status?.toLowerCase() === "submitted" && (
-                      <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                          <p className="text-sm font-semibold text-amber-400">Awaiting Evaluation</p>
+                    {!isTrainer && hw.status?.toLowerCase() === "submitted" && !editingSubmissions[hw.id] && (
+                      <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                            <p className="text-sm font-semibold text-amber-400">Awaiting Evaluation</p>
+                          </div>
+                          <p className="text-sm text-slate-400">Your trainer will review and grade your submission soon.</p>
                         </div>
-                        <p className="text-sm text-slate-400">Your trainer will review and grade your submission soon.</p>
+                        {hw.type?.toLowerCase() !== "board" && (
+                          <button
+                            onClick={() => {
+                              setEditingSubmissions(prev => ({ ...prev, [hw.id]: true }));
+                              setKeptExistingImages(prev => ({ ...prev, [hw.id]: hw.submissionImageUrls || [] }));
+                              setSubmissionTexts(prev => ({ ...prev, [hw.id]: hw.submission || "" }));
+                            }}
+                            className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shrink-0 border border-amber-500/20"
+                          >
+                            <Edit2 className="w-4 h-4" /> Edit Submission
+                          </button>
+                        )}
                       </div>
                     )}
 
