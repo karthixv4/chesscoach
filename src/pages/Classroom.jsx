@@ -884,21 +884,31 @@ export default function Classroom() {
                               <div className="flex flex-wrap gap-3">
                                 {(keptExistingImages[hw.id] || []).map((src, i) => (
                                   <div key={`kept-${i}`} className="relative group">
-                                    <img src={src} alt={`sub-kept-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+                                    <img 
+                                      src={src} 
+                                      alt={`sub-kept-${i}`} 
+                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors" 
+                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }} 
+                                    />
                                     <button
                                       type="button"
-                                      onClick={() => handleRemoveKeptImage(hw.id, i)}
-                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => { e.stopPropagation(); handleRemoveKeptImage(hw.id, i); }}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                     >×</button>
                                   </div>
                                 ))}
                                 {(submissionPreviews[hw.id] || []).map((src, i) => (
                                   <div key={`new-${i}`} className="relative group">
-                                    <img src={src} alt={`sub-${i}`} className="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+                                    <img 
+                                      src={src} 
+                                      alt={`sub-${i}`} 
+                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors" 
+                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }} 
+                                    />
                                     <button
                                       type="button"
-                                      onClick={() => handleRemoveSubmissionImage(hw.id, i)}
-                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => { e.stopPropagation(); handleRemoveSubmissionImage(hw.id, i); }}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                     >×</button>
                                   </div>
                                 ))}
