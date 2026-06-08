@@ -24,6 +24,7 @@ import {
   Loader2,
   Image as ImageIcon,
   ChevronLeft,
+  ChevronRight,
   LayoutGrid,
 } from "lucide-react";
 import InteractiveBoard from "../components/chess/InteractiveBoard";
@@ -109,6 +110,7 @@ export default function Classroom() {
   const [viewingSessionId, setViewingSessionId] = useState(null);
   const [editingHomework, setEditingHomework] = useState(null);
   const [editingMaterial, setEditingMaterial] = useState(null);
+  const [selectedMonthSessions, setSelectedMonthSessions] = useState(null);
   const [confirmation, setConfirmation] = useState({
     isOpen: false,
     title: "",
@@ -281,6 +283,20 @@ export default function Classroom() {
           ["completed", "cancelled"].includes(s.status) ||
           (["scheduled", "postponed", "preponed"].includes(s.status) && getEffectiveDate(s) < todayStr)
         );
+
+        const pastSessionsByMonth = {};
+        pastSessions.forEach(session => {
+          const dateStr = getEffectiveDate(session) || session.date;
+          if (!dateStr) return;
+          const dateObj = new Date(dateStr);
+          const monthStr = dateObj.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+          if (!pastSessionsByMonth[monthStr]) pastSessionsByMonth[monthStr] = [];
+          pastSessionsByMonth[monthStr].push(session);
+        });
+
+        const sortedMonths = Object.keys(pastSessionsByMonth).sort((a, b) => {
+          return new Date(`1 ${b}`).getTime() - new Date(`1 ${a}`).getTime();
+        });
 
         const getUpcomingTimeInfo = (s) => {
           if (!["scheduled", "postponed", "preponed"].includes(s.status)) return null;
@@ -636,16 +652,70 @@ export default function Classroom() {
             </section>
 
             {/* Past Sessions */}
-            {pastSessions.length > 0 && (
+            {sortedMonths.length > 0 && (
               <section className="space-y-4">
                 <h2 className="text-xl font-semibold text-slate-400">
                   Session History
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {pastSessions.map(renderSessionCard)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {sortedMonths.map(month => (
+                    <div
+                      key={month}
+                      onClick={() => setSelectedMonthSessions({ month, sessions: pastSessionsByMonth[month] })}
+                      className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-5 group cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-between shadow-sm"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-slate-700/80 rounded-xl flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                          <Calendar className="w-6 h-6 text-slate-300 group-hover:text-emerald-400 transition-colors" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg text-white group-hover:text-emerald-400 transition-colors">{month}</h3>
+                          <p className="text-sm text-slate-400">{pastSessionsByMonth[month].length} Session{pastSessionsByMonth[month].length !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
+
+            <AnimatePresence>
+              {selectedMonthSessions && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                    className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between p-6 border-b border-slate-800/80 shrink-0 bg-slate-900 z-10">
+                      <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                        <Calendar className="w-6 h-6 text-emerald-400" />
+                        Sessions in {selectedMonthSessions.month}
+                      </h3>
+                      <button
+                        onClick={() => setSelectedMonthSessions(null)}
+                        className="p-2 bg-slate-800 hover:bg-red-500 hover:text-white text-slate-400 rounded-full transition-colors flex items-center justify-center"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <div className="p-6 overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedMonthSessions.sessions.map((session) => renderSessionCard(session))}
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {isLoadingDetails ? (
               <div className="p-12 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
