@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ChevronRight, Activity, CheckCircle,
-  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar,
+  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar, ClipboardList,
 } from "lucide-react";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
@@ -379,6 +379,25 @@ export default function TrainerHome() {
                         {classroom.studentName}
                       </h3>
                       <ActivityBadge studentData={activityData} />
+                      {/* Pending evaluation pill */}
+                      {detailsStatus === "loading" && !classroom.homework ? (
+                        <span className="w-16 h-5 rounded-full bg-slate-700/60 animate-pulse inline-block" />
+                      ) : (
+                        (() => {
+                          const pendingCount = (classroom.homework || []).filter(
+                            (h) => h.status?.toLowerCase() === "submitted"
+                          ).length;
+                          return pendingCount > 0 ? (
+                            <span
+                              title={`${pendingCount} submission${pendingCount !== 1 ? "s" : ""} awaiting your evaluation`}
+                              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium cursor-default select-none"
+                            >
+                              <ClipboardList className="w-3 h-3" />
+                              {pendingCount} pending
+                            </span>
+                          ) : null;
+                        })()
+                      )}
                     </div>
                     <p className="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
                       <Activity className="w-3 h-3" />
