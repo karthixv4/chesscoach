@@ -23,9 +23,10 @@ import {
   ImagePlus,
   Loader2,
   Image as ImageIcon,
-  ChevronLeft,
   ChevronRight,
   LayoutGrid,
+  Target,
+  ChevronLeft,
 } from "lucide-react";
 import InteractiveBoard from "../components/chess/InteractiveBoard";
 import {
@@ -36,6 +37,9 @@ import {
   deleteSession,
   fetchClassroomDetails,
   addNotes,
+  setMonthlyTarget,
+  deleteMonthlyTarget,
+  requestRework,
 } from "../store/classroomsSlice";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import Markdown from "react-markdown";
@@ -125,7 +129,21 @@ export default function Classroom() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submissionFileRefs = useRef({});
 
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
   const foundClassroom = classrooms.find((c) => c.id === id);
+  const currentTarget = foundClassroom?.monthlyTargets?.find(t => t.month === currentMonth && t.year === currentYear);
+
+  const [targetValue, setTargetValue] = useState("");
+  const [targetTitle, setTargetTitle] = useState("");
+  const [isSavingTarget, setIsSavingTarget] = useState(false);
+
+  useEffect(() => {
+    if (currentTarget) {
+      setTargetValue(currentTarget.target.toString());
+      setTargetTitle(currentTarget.title || "");
+    }
+  }, [currentTarget]);
   const classroom = foundClassroom
     ? {
       ...foundClassroom,
@@ -213,6 +231,15 @@ export default function Classroom() {
     setEvaluatingHomework(null);
   };
 
+  const handleModalRework = (id, modalFeedback) => {
+    dispatch(requestRework({
+      classroomId: classroom.id,
+      homeworkId: id,
+      feedback: modalFeedback,
+    }));
+    setEvaluatingHomework(null);
+  };
+
   const handleSubmitHomework = async (hw, submission) => {
     const files = submissionFiles[hw.id] || [];
     const keptImages = keptExistingImages[hw.id] || [];
@@ -262,6 +289,40 @@ export default function Classroom() {
     }));
   };
 
+  const handleSaveTarget = async () => {
+    if (!targetValue) return;
+    setIsSavingTarget(true);
+    await dispatch(setMonthlyTarget({
+      classroomId: classroom.id,
+      targetData: {
+        month: currentMonth,
+        year: currentYear,
+        target: parseInt(targetValue, 10),
+        title: targetTitle || null,
+      }
+    }));
+    setIsSavingTarget(false);
+  };
+
+  const handleRemoveTarget = async () => {
+    setConfirmation({
+      isOpen: true,
+      title: "Remove Target",
+      message: `Are you sure you want to remove the target for ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}?`,
+      onConfirm: async () => {
+        setIsSavingTarget(true);
+        await dispatch(deleteMonthlyTarget({
+          classroomId: classroom.id,
+          month: currentMonth,
+          year: currentYear,
+        }));
+        setIsSavingTarget(false);
+        setTargetValue("");
+        setTargetTitle("");
+      },
+    });
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "sessions": {
@@ -272,6 +333,13 @@ export default function Classroom() {
 
         const todayStr = new Date(currentTime.getTime() - currentTime.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         const getEffectiveDate = (s) => s.rescheduledDate ? s.rescheduledDate.split('T')[0] : (s.date ? s.date.split('T')[0] : "");
+
+        const sessionsThisMonthCount = normalizedSessions.filter(s => {
+          const d = getEffectiveDate(s);
+          if (!d) return false;
+          const dateObj = new Date(d);
+          return dateObj.getMonth() + 1 === currentMonth && dateObj.getFullYear() === currentYear && s.status !== "cancelled";
+        }).length;
 
         const liveSessions = normalizedSessions.filter(
           (s) => s.status === "ongoing",
@@ -598,6 +666,71 @@ export default function Classroom() {
 
         return (
           <div className="space-y-10">
+            {isTrainer && (
+              <section className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 flex flex-col gap-6">
+                <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold flex items-center gap-2 mb-2">
+                      <Target className="w-5 h-5 text-indigo-400" /> Current Month Target ({new Date().toLocaleString('default', { month: 'long', year: 'numeric' })})
+                    </h2>
+                    <p className="text-sm text-slate-400">Set a session target for the student to keep track of planned lessons.</p>
+                  </div>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <input
+                      type="text"
+                      value={targetTitle}
+                      onChange={(e) => setTargetTitle(e.target.value)}
+                      placeholder="e.g. Christmas Sessions"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-48 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      value={targetValue}
+                      onChange={(e) => setTargetValue(e.target.value)}
+                      placeholder="Target (e.g. 8)"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-32 text-sm"
+                    />
+                    <button
+                      onClick={handleSaveTarget}
+                      disabled={isSavingTarget}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isSavingTarget ? "Saving..." : "Save Target"}
+                    </button>
+                  </div>
+                </div>
+                {currentTarget && (
+                  <div className="pt-4 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="px-3 py-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-sm font-medium flex items-center gap-2">
+                        Target: {currentTarget.target} {currentTarget.title ? `(${currentTarget.title})` : ""}
+                        <button
+                          onClick={handleRemoveTarget}
+                          disabled={isSavingTarget}
+                          className="ml-2 p-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md transition-colors"
+                          title="Remove Target"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        {sessionsThisMonthCount} / {currentTarget.target} sessions planned or completed
+                      </div>
+                    </div>
+                    {currentTarget.target - sessionsThisMonthCount > 0 ? (
+                      <div className="text-sm font-medium text-amber-400 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                        {currentTarget.target - sessionsThisMonthCount} pending
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                        <CheckSquare className="w-4 h-4" /> Target Met
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
             {/* Live Sessions */}
             {liveSessions.length > 0 && (
               <section className="space-y-4">
@@ -815,9 +948,14 @@ export default function Classroom() {
                           </button>
                         </div>
                       )}
-                      {hw.status?.toLowerCase() === "assigned" && (
+                      {hw.status?.toLowerCase() === "assigned" && !hw.feedback && (
                         <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-medium">
                           Assigned
+                        </span>
+                      )}
+                      {hw.status?.toLowerCase() === "assigned" && hw.feedback && (
+                        <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-medium">
+                          Rework
                         </span>
                       )}
                       {hw.status?.toLowerCase() === "submitted" && (
@@ -894,6 +1032,17 @@ export default function Classroom() {
                       </div>
                     )}
 
+                    {hw.status?.toLowerCase() === "assigned" && hw.feedback && (
+                      <div className="mt-6 mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                        <h4 className="text-sm font-medium text-red-400 mb-2">
+                          {isTrainer ? "You Requested Rework" : "Trainer Requested Rework"}
+                        </h4>
+                        <div className="prose prose-sm prose-invert max-w-none text-slate-300">
+                          <Markdown>{hw.feedback}</Markdown>
+                        </div>
+                      </div>
+                    )}
+
                     {hw.type?.toLowerCase() === "board" && hw.challenge && (
                       <div className="max-w-[440px] mx-auto">
                         {hw.challenge.description && !hw.description && (
@@ -954,11 +1103,11 @@ export default function Classroom() {
                               <div className="flex flex-wrap gap-3">
                                 {(keptExistingImages[hw.id] || []).map((src, i) => (
                                   <div key={`kept-${i}`} className="relative group">
-                                    <img 
-                                      src={src} 
-                                      alt={`sub-kept-${i}`} 
-                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors" 
-                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }} 
+                                    <img
+                                      src={src}
+                                      alt={`sub-kept-${i}`}
+                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors"
+                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }}
                                     />
                                     <button
                                       type="button"
@@ -969,11 +1118,11 @@ export default function Classroom() {
                                 ))}
                                 {(submissionPreviews[hw.id] || []).map((src, i) => (
                                   <div key={`new-${i}`} className="relative group">
-                                    <img 
-                                      src={src} 
-                                      alt={`sub-${i}`} 
-                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors" 
-                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }} 
+                                    <img
+                                      src={src}
+                                      alt={`sub-${i}`}
+                                      className="w-16 h-16 object-cover rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-500 transition-colors"
+                                      onClick={(e) => { e.stopPropagation(); setViewerImage(src); }}
                                     />
                                     <button
                                       type="button"
@@ -1261,10 +1410,10 @@ export default function Classroom() {
                         </motion.div>
                       )}
 
-                      {hw.status === "evaluated" && hw.feedback && (
-                        <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                          <h4 className="text-sm font-medium text-blue-400 mb-2">
-                            Trainer Feedback
+                      {(hw.status === "evaluated" || (hw.status?.toLowerCase() === "assigned" && hw.feedback)) && hw.feedback && (
+                        <div className={`mt-6 ${hw.status?.toLowerCase() === "assigned" ? "bg-amber-500/10 border-amber-500/20" : "bg-blue-500/10 border-blue-500/20"} border rounded-xl p-4`}>
+                          <h4 className={`text-sm font-medium ${hw.status?.toLowerCase() === "assigned" ? "text-amber-400" : "text-blue-400"} mb-2`}>
+                            {hw.status?.toLowerCase() === "assigned" ? "Trainer Requested Rework" : "Trainer Feedback"}
                           </h4>
                           <div className="prose prose-sm prose-invert max-w-none text-slate-300">
                             <Markdown>{hw.feedback}</Markdown>
@@ -1529,6 +1678,7 @@ export default function Classroom() {
           onClose={() => setEvaluatingHomework(null)}
           homework={evaluatingHomework}
           onSubmit={handleModalEvaluate}
+          onRequestRework={handleModalRework}
         />
 
         {/* Active Solving Board Modal */}

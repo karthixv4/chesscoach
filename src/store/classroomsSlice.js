@@ -47,6 +47,24 @@ export const addNotes = createAsyncThunk('classrooms/addNotes', async ({ classro
   }
 });
 
+export const setMonthlyTarget = createAsyncThunk('classrooms/setMonthlyTarget', async ({ classroomId, targetData }, { rejectWithValue }) => {
+  try {
+    const res = await api.patch(`/classrooms/${classroomId}/targets`, targetData);
+    return { classroomId, target: res.data.monthlyTarget };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to set target');
+  }
+});
+
+export const deleteMonthlyTarget = createAsyncThunk('classrooms/deleteMonthlyTarget', async ({ classroomId, month, year }, { rejectWithValue }) => {
+  try {
+    const res = await api.delete(`/classrooms/${classroomId}/targets`, { params: { month, year } });
+    return { classroomId, month: res.data.month, year: res.data.year };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to delete target');
+  }
+});
+
 // Sessions
 export const createSession = createAsyncThunk('sessions/create', async ({ classroomId, sessionData }, { rejectWithValue }) => {
   try {
@@ -155,6 +173,15 @@ export const evaluateHomework = createAsyncThunk('homework/evaluate', async ({ c
     return { classroomId, homework: res.data };
   } catch (error) {
     return rejectWithValue(error.response?.data?.error || 'Failed to evaluate homework');
+  }
+});
+
+export const requestRework = createAsyncThunk('homework/rework', async ({ classroomId, homeworkId, feedback }, { rejectWithValue }) => {
+  try {
+    const res = await api.post(`/classrooms/${classroomId}/homework/${homeworkId}/rework`, { feedback });
+    return { classroomId, homework: res.data };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to request rework for homework');
   }
 });
 
@@ -310,6 +337,31 @@ const classroomsSlice = createSlice({
       });
     });
 
+    // Targets
+    builder.addCase(setMonthlyTarget.fulfilled, (state, action) => {
+      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
+        if (!c.monthlyTargets) c.monthlyTargets = [];
+        const idx = c.monthlyTargets.findIndex(t => t.month === action.payload.target.month && t.year === action.payload.target.year);
+        if (idx !== -1) {
+          c.monthlyTargets[idx] = action.payload.target;
+        } else {
+          c.monthlyTargets.push(action.payload.target);
+          c.monthlyTargets.sort((a, b) => {
+            if (a.year !== b.year) return b.year - a.year;
+            return b.month - a.month;
+          });
+        }
+      });
+    });
+
+    builder.addCase(deleteMonthlyTarget.fulfilled, (state, action) => {
+      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
+        if (c.monthlyTargets) {
+          c.monthlyTargets = c.monthlyTargets.filter(t => !(t.month === action.payload.month && t.year === action.payload.year));
+        }
+      });
+    });
+
     // Sessions
 
     builder.addCase(createSession.fulfilled, (state, action) => {
@@ -384,9 +436,19 @@ const classroomsSlice = createSlice({
       });
     });
     builder.addCase(evaluateHomework.fulfilled, (state, action) => {
-      updateActiveIfMatch(state, action.payload.classroomId, (c) => {
-        const idx = c.homework.findIndex(h => h.id === action.payload.homework.id);
-        if (idx !== -1) c.homework[idx] = action.payload.homework;
+      const { classroomId, homework } = action.payload;
+      updateActiveIfMatch(state, classroomId, (active) => {
+        const idx = active.homework.findIndex(h => h.id === homework.id);
+        if (idx !== -1) active.homework[idx] = homework;
+      });
+    });
+
+    // Rework Homework
+    builder.addCase(requestRework.fulfilled, (state, action) => {
+      const { classroomId, homework } = action.payload;
+      updateActiveIfMatch(state, classroomId, (active) => {
+        const idx = active.homework.findIndex(h => h.id === homework.id);
+        if (idx !== -1) active.homework[idx] = homework;
       });
     });
 

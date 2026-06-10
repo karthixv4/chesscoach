@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, Star, Image as ImageIcon, Loader2 } from "lucide-react";
 import MarkdownEditor from "../common/MarkdownEditor";
 
-export default function WorksheetEvaluationModal({ isOpen, onClose, homework, onSubmit }) {
+export default function WorksheetEvaluationModal({ isOpen, onClose, homework, onSubmit, onRequestRework }) {
   const [trainerIdx, setTrainerIdx] = useState(0);
   const [studentIdx, setStudentIdx] = useState(0);
   const [score, setScore] = useState(0);
@@ -47,6 +47,14 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
   const handleSubmit = async () => {
     setIsSubmitting(true);
     await onSubmit(homework.id, score, feedback);
+    setIsSubmitting(false);
+    onClose();
+  };
+
+  const handleRework = async () => {
+    if (!feedback.trim()) return;
+    setIsSubmitting(true);
+    await onRequestRework(homework.id, feedback);
     setIsSubmitting(false);
     onClose();
   };
@@ -218,6 +226,17 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                         className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-sm font-medium transition-colors"
                       >
                         Cancel
+                      </button>
+                      <button
+                        onClick={handleRework}
+                        disabled={!feedback.trim() || isSubmitting}
+                        className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 border border-amber-500/50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          "Request Rework"
+                        )}
                       </button>
                       <button
                         onClick={handleSubmit}

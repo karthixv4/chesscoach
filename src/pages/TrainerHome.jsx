@@ -243,7 +243,7 @@ export default function TrainerHome() {
             />
           </div>
           <div className="xl:col-span-1">
-            <StudentSessionStats sessions={trainerSessions} isLoading={trainerSessionsStatus === "loading"} />
+            <StudentSessionStats sessions={trainerSessions} classrooms={classrooms} isLoading={trainerSessionsStatus === "loading"} />
           </div>
         </div>
       )}

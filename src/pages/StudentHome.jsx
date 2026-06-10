@@ -896,10 +896,22 @@ export default function StudentHome() {
                                         <Clock className="w-3.5 h-3.5" /> {dueText}
                                       </span>
                                     )}
-                                    <span className="px-2.5 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-md text-xs font-medium shadow-sm">
-                                      Assigned
+                                    <span className={`px-2.5 py-1 rounded-md text-xs font-medium shadow-sm ${hw.feedback
+                                        ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                        : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                      }`}>
+                                      {hw.feedback ? "Rework Requested" : "Assigned"}
                                     </span>
                                   </div>
+                                  
+                                  {hw.feedback && (
+                                    <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                                      <h5 className="text-xs font-semibold text-amber-400 mb-1">Trainer Comment:</h5>
+                                      <div className="text-sm text-slate-300">
+                                        <Markdown>{hw.feedback}</Markdown>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />

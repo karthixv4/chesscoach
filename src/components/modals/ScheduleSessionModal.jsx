@@ -22,6 +22,7 @@ export default function ScheduleSessionModal({
   const [startTime, setStartTime] = useState(session?.startTime || "");
   const [endTime, setEndTime] = useState(session?.endTime || "");
   const [endTimeLocked, setEndTimeLocked] = useState(true);
+  const [mode, setMode] = useState(session?.mode || "ONLINE");
   const [link, setLink] = useState(session?.link || "");
 
   const calcEndTime = (start) => {
@@ -46,14 +47,15 @@ export default function ScheduleSessionModal({
       setDate(extractDate(session.date) || "");
       setStartTime(session.startTime);
       setEndTime(session.endTime);
-      setLink(session.link);
+      setMode(session.mode || "ONLINE");
+      setLink(session.link || "");
     }
   }, [session]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !date || !startTime || !endTime || !link.trim())
-      return;
+    if (!title.trim() || !date || !startTime || !endTime) return;
+    if (mode === "ONLINE" && !link.trim()) return;
 
     try {
       setIsSubmitting(true);
@@ -63,7 +65,8 @@ export default function ScheduleSessionModal({
           date,
           startTime,
           endTime,
-          link,
+          mode,
+          link: mode === "ONLINE" ? link : null,
         };
         await dispatch(updateSession({ classroomId, sessionId: session.id, sessionData: updatedSession })).unwrap();
       } else {
@@ -72,7 +75,8 @@ export default function ScheduleSessionModal({
           date,
           startTime,
           endTime,
-          link,
+          mode,
+          link: mode === "ONLINE" ? link : null,
         };
         await dispatch(createSession({ classroomId, sessionData: newSession })).unwrap();
       }
@@ -189,20 +193,52 @@ export default function ScheduleSessionModal({
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Meeting Link
+                Session Mode
               </label>
-              <div className="relative">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="url"
-                  required
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  placeholder="https://meet.google.com/..."
-                />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode("ONLINE")}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    mode === "ONLINE"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
+                  Online
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("OFFLINE")}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    mode === "OFFLINE"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
+                  Offline
+                </button>
               </div>
             </div>
+
+            {mode === "ONLINE" && (
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                  Meeting Link
+                </label>
+                <div className="relative">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="url"
+                    required={mode === "ONLINE"}
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    placeholder="https://meet.google.com/..."
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="pt-4 flex gap-3">
               <button
