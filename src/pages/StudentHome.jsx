@@ -12,6 +12,7 @@ import {
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import DailyLogForm from "../components/dashboard/DailyLogForm";
 import PracticeStreak from "../components/dashboard/PracticeStreak";
+import { FEATURES } from "../config/features";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import ViewSessionModal from "../components/modals/ViewSessionModal";
 import CalendarView from "../components/dashboard/CalendarView";
@@ -343,14 +344,17 @@ export default function StudentHome() {
       color: "emerald",
       loading: statIsLoading && !classroom.homework,
     },
-    {
+  ];
+
+  if (FEATURES.ENABLE_PRACTICE_LOGS) {
+    stats.push({
       label: "Practice Streak",
       value: `${computeStreak(logs)}d`,
       icon: Flame,
       color: "orange",
       loading: false,
-    },
-  ];
+    });
+  }
 
 
 
@@ -476,7 +480,7 @@ export default function StudentHome() {
     <div className="space-y-8">
       {/* Daily Log Modal */}
       <AnimatePresence>
-        {showLogModal && (
+        {FEATURES.ENABLE_PRACTICE_LOGS && showLogModal && (
           <DailyLogForm
             classroomId={classroom.id}
             todayLog={todayLog}
@@ -500,7 +504,7 @@ export default function StudentHome() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
             Welcome, {user?.name.split(" ")[0]}
-            {todayLog && (
+            {FEATURES.ENABLE_PRACTICE_LOGS && todayLog && (
               <span className="text-sm font-medium px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5" /> Logged today
               </span>
@@ -509,22 +513,24 @@ export default function StudentHome() {
           <p className="text-slate-400 mt-1">Ready for your next chess lesson?</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            id="log-today-btn"
-            onClick={() => {
-              setShowLogModal(true);
-            }}
-            className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${todayLog
-                ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
-                : "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/20"
-              }`}
-          >
-            {todayLog ? (
-              <><Flame className="w-4 h-4" /> Edit Log</>
-            ) : (
-              <><PlusCircle className="w-4 h-4" /> Log Today</>
-            )}
-          </button>
+          {FEATURES.ENABLE_PRACTICE_LOGS && (
+            <button
+              id="log-today-btn"
+              onClick={() => {
+                setShowLogModal(true);
+              }}
+              className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 text-sm ${todayLog
+                  ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                  : "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/20"
+                }`}
+            >
+              {todayLog ? (
+                <><Flame className="w-4 h-4" /> Edit Log</>
+              ) : (
+                <><PlusCircle className="w-4 h-4" /> Log Today</>
+              )}
+            </button>
+          )}
           <button
             onClick={() => {
               navigate(`/classroom/${classroom.id}`);
@@ -1005,45 +1011,47 @@ export default function StudentHome() {
             {/* ── Performance Tab ────────────────────────────────────────────── */}
             {activeTab === "performance" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className={`grid ${FEATURES.ENABLE_PRACTICE_LOGS ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1"} gap-6`}>
                   {/* Practice Streak Card */}
-                  <div className="space-y-6">
-                    {/* Quick-log CTA */}
-                    <div
-                      onClick={() => setShowLogModal(true)}
-                      className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${todayLog
-                          ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
-                          : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
-                        }`}
-                    >
-                      <div>
-                        <p className="font-semibold text-white">
-                          {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
-                        </p>
-                        <p className="text-sm text-slate-400 mt-0.5">
-                          {todayLog
-                            ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
-                            : "Tap to log your practice — takes under 1 minute"}
-                        </p>
+                  {FEATURES.ENABLE_PRACTICE_LOGS && (
+                    <div className="space-y-6">
+                      {/* Quick-log CTA */}
+                      <div
+                        onClick={() => setShowLogModal(true)}
+                        className={`cursor-pointer p-5 rounded-2xl border flex items-center justify-between transition-all ${todayLog
+                            ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10"
+                            : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10 animate-pulse"
+                          }`}
+                      >
+                        <div>
+                          <p className="font-semibold text-white">
+                            {todayLog ? "Today's practice logged ✓" : "Haven't logged today yet"}
+                          </p>
+                          <p className="text-sm text-slate-400 mt-0.5">
+                            {todayLog
+                              ? `${todayLog.category} · ${todayLog.minutesSpent ?? 0} min · ${todayLog.gamesPlayed ?? 0} games`
+                              : "Tap to log your practice — takes under 1 minute"}
+                          </p>
+                        </div>
+                        {todayLog ? (
+                          <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
+                        ) : (
+                          <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
+                        )}
                       </div>
-                      {todayLog ? (
-                        <Flame className="w-8 h-8 text-emerald-400 shrink-0" />
-                      ) : (
-                        <PlusCircle className="w-8 h-8 text-orange-400 shrink-0" />
-                      )}
-                    </div>
 
-                    {/* Streak + dot matrix */}
-                    <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
-                      <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                        <Flame className="w-5 h-5 text-orange-400" />
-                        Your Streak
-                      </h2>
-                      <div className="flex-1">
-                        <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                      {/* Streak + dot matrix */}
+                      <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">
+                        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                          <Flame className="w-5 h-5 text-orange-400" />
+                          Your Streak
+                        </h2>
+                        <div className="flex-1">
+                          <PracticeStreak logs={logs} streak={computeStreak(logs)} />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Progress Tracker Card */}
                   <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 h-full flex flex-col">

@@ -15,6 +15,7 @@ import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import CalendarView from "../components/dashboard/CalendarView";
 import StudentSessionStats from "../components/dashboard/StudentSessionStats";
+import { FEATURES } from "../config/features";
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -251,7 +252,7 @@ export default function TrainerHome() {
       {activeTab === "dashboard" && (
         <>
       {/* ── Stat cards ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-2 ${FEATURES.ENABLE_PRACTICE_LOGS ? "md:grid-cols-4" : "md:grid-cols-3"} gap-6`}>
         {/* Active students */}
         <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50">
           <div className="flex items-center gap-4">
@@ -300,41 +301,43 @@ export default function TrainerHome() {
         </div>
 
         {/* Needs nudge — dynamic threshold */}
-        <div className={`backdrop-blur-md p-6 rounded-2xl border transition-colors ${
-          flaggedCount > 0
-            ? "bg-red-500/10 border-red-500/30"
-            : "bg-slate-800/50 border-slate-700/50"
-        }`}>
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${flaggedCount > 0 ? "bg-red-500/15" : "bg-slate-700/50"}`}>
-              <AlertTriangle className={`w-6 h-6 ${flaggedCount > 0 ? "text-red-400" : "text-slate-500"}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-slate-400 font-medium">Needs Nudge</p>
-              <div className="flex items-baseline gap-2">
-                <p className={`text-2xl font-semibold ${flaggedCount > 0 ? "text-red-400" : ""}`}>
-                  {inactiveStatus === "loading" ? "…" : flaggedCount}
-                </p>
+        {FEATURES.ENABLE_PRACTICE_LOGS && (
+          <div className={`backdrop-blur-md p-6 rounded-2xl border transition-colors ${
+            flaggedCount > 0
+              ? "bg-red-500/10 border-red-500/30"
+              : "bg-slate-800/50 border-slate-700/50"
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-xl ${flaggedCount > 0 ? "bg-red-500/15" : "bg-slate-700/50"}`}>
+                <AlertTriangle className={`w-6 h-6 ${flaggedCount > 0 ? "text-red-400" : "text-slate-500"}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-slate-400 font-medium">Needs Nudge</p>
+                <div className="flex items-baseline gap-2">
+                  <p className={`text-2xl font-semibold ${flaggedCount > 0 ? "text-red-400" : ""}`}>
+                    {inactiveStatus === "loading" ? "…" : flaggedCount}
+                  </p>
+                </div>
               </div>
             </div>
+            {/* Threshold control */}
+            <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-center gap-2">
+              <span className="text-[11px] text-slate-500">Flag after</span>
+              <select
+                value={inactiveDays}
+                onChange={(e) => {
+                  const days = Number(e.target.value);
+                  setInactiveDays(days);
+                }}
+                className="flex-1 bg-slate-700/70 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-slate-500"
+              >
+                {[1, 2, 3, 5, 7, 14].map((d) => (
+                  <option key={d} value={d}>{d} day{d !== 1 ? "s" : ""} inactive</option>
+                ))}
+              </select>
+            </div>
           </div>
-          {/* Threshold control */}
-          <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-center gap-2">
-            <span className="text-[11px] text-slate-500">Flag after</span>
-            <select
-              value={inactiveDays}
-              onChange={(e) => {
-                const days = Number(e.target.value);
-                setInactiveDays(days);
-              }}
-              className="flex-1 bg-slate-700/70 border border-slate-600/50 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-slate-500"
-            >
-              {[1, 2, 3, 5, 7, 14].map((d) => (
-                <option key={d} value={d}>{d} day{d !== 1 ? "s" : ""} inactive</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ── Student overview grid ─────────────────────────────────────────── */}
@@ -363,9 +366,9 @@ export default function TrainerHome() {
                   {/* Avatar */}
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold shrink-0 ${
-                      isFlagged
+                      FEATURES.ENABLE_PRACTICE_LOGS && isFlagged
                         ? "bg-red-500/15 text-red-400 ring-2 ring-red-500/30"
-                        : activityData?.daysInactive === 0
+                        : FEATURES.ENABLE_PRACTICE_LOGS && activityData?.daysInactive === 0
                         ? "bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
                         : "bg-slate-700 text-slate-300"
                     }`}
@@ -375,10 +378,10 @@ export default function TrainerHome() {
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className={`font-medium text-lg truncate ${isFlagged ? "text-red-300" : "group-hover:text-emerald-400"} transition-colors`}>
+                      <h3 className={`font-medium text-lg truncate ${FEATURES.ENABLE_PRACTICE_LOGS && isFlagged ? "text-red-300" : "group-hover:text-emerald-400"} transition-colors`}>
                         {classroom.studentName}
                       </h3>
-                      <ActivityBadge studentData={activityData} />
+                      {FEATURES.ENABLE_PRACTICE_LOGS && <ActivityBadge studentData={activityData} />}
                       {/* Pending evaluation pill */}
                       {detailsStatus === "loading" && !classroom.homework ? (
                         <span className="w-16 h-5 rounded-full bg-slate-700/60 animate-pulse inline-block" />
@@ -416,16 +419,18 @@ export default function TrainerHome() {
                 {/* Right: action buttons */}
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
                   {/* Analytics button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDrawerClassroom(classroom);
-                    }}
-                    className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    title="View analytics"
-                  >
-                    <BarChart3 className="w-5 h-5" />
-                  </button>
+                  {FEATURES.ENABLE_PRACTICE_LOGS && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDrawerClassroom(classroom);
+                      }}
+                      className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      title="View analytics"
+                    >
+                      <BarChart3 className="w-5 h-5" />
+                    </button>
+                  )}
 
                   <button
                     onClick={(e) => {
