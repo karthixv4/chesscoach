@@ -127,6 +127,7 @@ export default function Classroom() {
   const [editingSubmissions, setEditingSubmissions] = useState({}); // hwId -> boolean
   const [keptExistingImages, setKeptExistingImages] = useState({}); // hwId -> string[]
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEvaluatingInline, setIsEvaluatingInline] = useState(false);
   const submissionFileRefs = useRef({});
 
   const currentMonth = new Date().getMonth() + 1;
@@ -209,21 +210,23 @@ export default function Classroom() {
     dispatch(addNotes({ classroomId: classroom.id, notes: e.target.value }));
   };
 
-  const handleEvaluate = (homeworkId) => {
-    dispatch(
+  const handleEvaluate = async (homeworkId) => {
+    setIsEvaluatingInline(true);
+    await dispatch(
       evaluateHomework({
         classroomId: classroom.id,
         homeworkId,
         evaluationData: { feedback: feedbackText, score },
       }),
     );
+    setIsEvaluatingInline(false);
     setEvaluatingId(null);
     setFeedbackText("");
     setScore(0);
   };
 
-  const handleModalEvaluate = (id, modalScore, modalFeedback) => {
-    dispatch(evaluateHomework({
+  const handleModalEvaluate = async (id, modalScore, modalFeedback) => {
+    await dispatch(evaluateHomework({
       classroomId: classroom.id,
       homeworkId: id,
       evaluationData: { score: modalScore, feedback: modalFeedback },
@@ -231,8 +234,8 @@ export default function Classroom() {
     setEvaluatingHomework(null);
   };
 
-  const handleModalRework = (id, modalFeedback) => {
-    dispatch(requestRework({
+  const handleModalRework = async (id, modalFeedback) => {
+    await dispatch(requestRework({
       classroomId: classroom.id,
       homeworkId: id,
       feedback: modalFeedback,
@@ -345,11 +348,10 @@ export default function Classroom() {
           (s) => s.status === "ongoing",
         );
         const upcomingSessions = normalizedSessions.filter(
-          (s) => ["scheduled", "postponed", "preponed"].includes(s.status) && getEffectiveDate(s) >= todayStr
+          (s) => ["scheduled", "postponed", "preponed"].includes(s.status)
         );
         const pastSessions = normalizedSessions.filter((s) =>
-          ["completed", "cancelled"].includes(s.status) ||
-          (["scheduled", "postponed", "preponed"].includes(s.status) && getEffectiveDate(s) < todayStr)
+          ["completed", "cancelled"].includes(s.status)
         );
 
         const pastSessionsByMonth = {};
@@ -1401,10 +1403,14 @@ export default function Classroom() {
                               onClick={() => {
                                 handleEvaluate(hw.id);
                               }}
-                              disabled={score === 0}
-                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={score === 0 || isEvaluatingInline}
+                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[150px]"
                             >
-                              Submit Evaluation
+                              {isEvaluatingInline ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Submit Evaluation"
+                              )}
                             </button>
                           </div>
                         </motion.div>

@@ -244,15 +244,12 @@ export default function StudentHome() {
 
   const upcomingSessions = allSessions.filter(
     (s) =>
-      UPCOMING_STATUSES.includes(s.status?.toUpperCase()) &&
-      getEffectiveDate(s) >= todayStr
+      UPCOMING_STATUSES.includes(s.status?.toUpperCase())
   );
 
   const pastSessions = allSessions.filter(
     (s) =>
-      ["COMPLETED", "CANCELLED"].includes(s.status?.toUpperCase()) ||
-      (UPCOMING_STATUSES.includes(s.status?.toUpperCase()) &&
-        getEffectiveDate(s) < todayStr)
+      ["COMPLETED", "CANCELLED"].includes(s.status?.toUpperCase())
   );
 
   // Is sessions data still loading?
