@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails, fetchTrainerSessions } from "../store/classroomsSlice";
 import { fetchInactiveStudents } from "../store/dailyLogsSlice";
@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ChevronRight, Activity, CheckCircle,
-  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar, ClipboardList,
+  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar, ClipboardList, Video,
 } from "lucide-react";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
@@ -16,6 +16,49 @@ import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import CalendarView from "../components/dashboard/CalendarView";
 import StudentSessionStats from "../components/dashboard/StudentSessionStats";
 import { FEATURES } from "../config/features";
+
+// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+function Tooltip({ content, children }) {
+  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
+
+  const handleMouseEnter = (e) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setPos({ x: rect.left + rect.width / 2, y: rect.top });
+    }
+    setVisible(true);
+  };
+
+  return (
+    <span
+      ref={containerRef}
+      className="relative inline-flex"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setVisible(false)}
+    >
+      {children}
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none"
+          >
+            <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600/60 text-slate-200 text-xs rounded-xl px-3 py-2 shadow-2xl shadow-black/40 whitespace-nowrap max-w-xs">
+              {content}
+              {/* Arrow */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-700/80" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
 
 // ─── Inactivity badge ─────────────────────────────────────────────────────────
 function ActivityBadge({ studentData }) {
@@ -53,6 +96,70 @@ function ActivityBadge({ studentData }) {
       <Clock className="w-3 h-3" />
       {studentData.daysInactive}d ago
     </span>
+  );
+}
+
+// ─── Last session badge ───────────────────────────────────────────────────────
+function getLastSessionInfo(sessions) {
+  if (!sessions || sessions.length === 0) return null;
+  // Only consider completed sessions
+  const completed = sessions.filter(
+    (s) => s.status?.toLowerCase() === "completed"
+  );
+  if (completed.length === 0) return null;
+  const sorted = [...completed].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const last = sorted[0];
+  const lastDate = new Date(last.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  lastDate.setHours(0, 0, 0, 0);
+  const diffMs = today - lastDate;
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return { diffDays, date: last.date, title: last.title };
+}
+
+function LastSessionBadge({ sessions, isLoading }) {
+  if (isLoading) {
+    return <span className="w-24 h-5 rounded-full bg-slate-700/60 animate-pulse inline-block" />;
+  }
+
+  const info = getLastSessionInfo(sessions);
+
+  if (!info) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/40 font-medium cursor-default select-none">
+        <Video className="w-3 h-3" />
+        No completed sessions
+      </span>
+    );
+  }
+
+  const { diffDays, title } = info;
+  const label = diffDays === 0
+    ? "0 days ago"
+    : diffDays === 1
+    ? "1 day ago"
+    : `${diffDays} days ago`;
+
+  const tooltipContent = (
+    <span className="flex flex-col gap-0.5">
+      <span className="text-slate-400 font-normal">Last completed session</span>
+      <span className="text-white font-semibold">&ldquo;{title}&rdquo;</span>
+    </span>
+  );
+
+  let colorClass = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+  if (diffDays > 30) colorClass = "bg-red-500/15 text-red-400 border-red-500/30";
+  else if (diffDays > 7) colorClass = "bg-amber-500/15 text-amber-400 border-amber-500/30";
+  else if (diffDays > 0) colorClass = "bg-blue-500/15 text-blue-400 border-blue-500/30";
+
+  return (
+    <Tooltip content={tooltipContent}>
+      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium cursor-default select-none ${colorClass}`}>
+        <Video className="w-3 h-3" />
+        {label}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -387,32 +494,52 @@ export default function TrainerHome() {
                         <span className="w-16 h-5 rounded-full bg-slate-700/60 animate-pulse inline-block" />
                       ) : (
                         (() => {
-                          const pendingCount = (classroom.homework || []).filter(
+                          const pendingHw = (classroom.homework || []).filter(
                             (h) => h.status?.toLowerCase() === "submitted"
-                          ).length;
-                          return pendingCount > 0 ? (
-                            <span
-                              title={`${pendingCount} submission${pendingCount !== 1 ? "s" : ""} awaiting your evaluation`}
-                              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium cursor-default select-none"
+                          );
+                          return pendingHw.length > 0 ? (
+                            <Tooltip
+                              content={
+                                <span className="flex flex-col gap-1">
+                                  <span className="text-slate-400 font-normal mb-0.5">Awaiting your evaluation</span>
+                                  {pendingHw.map((h) => (
+                                    <span key={h.id} className="flex items-center gap-1.5">
+                                      <ClipboardList className="w-3 h-3 text-amber-400 shrink-0" />
+                                      <span className="text-white font-medium truncate max-w-[180px]">{h.title}</span>
+                                    </span>
+                                  ))}
+                                </span>
+                              }
                             >
-                              <ClipboardList className="w-3 h-3" />
-                              {pendingCount} pending
-                            </span>
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium cursor-default select-none">
+                                <ClipboardList className="w-3 h-3" />
+                                {pendingHw.length} pending
+                              </span>
+                            </Tooltip>
                           ) : null;
                         })()
                       )}
                     </div>
-                    <p className="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
-                      <Activity className="w-3 h-3" />
-                      {detailsStatus === "loading" && !classroom.homework ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-                          <span className="text-slate-500">Loading…</span>
-                        </span>
-                      ) : (
-                        <>{(classroom.homework || []).length} Assignments</>
-                      )}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {/* Assignments count */}
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40 font-medium cursor-default select-none">
+                        <Activity className="w-3 h-3" />
+                        {detailsStatus === "loading" && !classroom.homework ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                            <span className="text-slate-500">Loading…</span>
+                          </span>
+                        ) : (
+                          <>{(classroom.homework || []).length} Assignments</>
+                        )}
+                      </span>
+
+                      {/* Last session badge */}
+                      <LastSessionBadge
+                        sessions={classroom.sessions}
+                        isLoading={detailsStatus === "loading" && !classroom.sessions}
+                      />
+                    </div>
                   </div>
                 </div>
 
