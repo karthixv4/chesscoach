@@ -2,16 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setActiveClassroom, fetchClassrooms, deleteClassroom, fetchClassroomDetails, fetchTrainerSessions } from "../store/classroomsSlice";
 import { fetchInactiveStudents } from "../store/dailyLogsSlice";
+import { fetchReports } from "../store/reportsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ChevronRight, Activity, CheckCircle,
-  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar, ClipboardList, Video,
+  Trash2, Edit2, AlertTriangle, Flame, BarChart3, Clock, Calendar, ClipboardList, Video, FileText,
 } from "lucide-react";
 import AddStudentModal from "../components/modals/AddStudentModal";
 import ConfirmationModal from "../components/modals/ConfirmationModal";
 import ViewSessionModal from "../components/modals/ViewSessionModal";
 import StudentActivityDrawer from "../components/dashboard/StudentActivityDrawer";
+import ReportEditorModal from "../components/modals/ReportEditorModal";
 import QuoteOfTheDay from "../components/dashboard/QuoteOfTheDay";
 import CalendarView from "../components/dashboard/CalendarView";
 import StudentSessionStats from "../components/dashboard/StudentSessionStats";
@@ -174,6 +176,7 @@ export default function TrainerHome() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [drawerClassroom, setDrawerClassroom] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
+  const [reportClassroom, setReportClassroom] = useState(null);
   const [inactiveDays, setInactiveDays] = useState(3);
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -195,6 +198,13 @@ export default function TrainerHome() {
   useEffect(() => {
     dispatch(fetchInactiveStudents(inactiveDays));
   }, [dispatch, inactiveDays]);
+
+  // Fetch reports for all classrooms when feature is on
+  useEffect(() => {
+    if (FEATURES.ENABLE_MONTHLY_REPORTS && classrooms.length > 0) {
+      classrooms.forEach(c => dispatch(fetchReports(c.id)));
+    }
+  }, [dispatch, classrooms.length]);
 
   // Build a lookup map: classroomId → inactivity info
   const inactivityMap = {};
@@ -287,6 +297,15 @@ export default function TrainerHome() {
             key={drawerClassroom.id}
             classroom={drawerClassroom}
             onClose={() => setDrawerClassroom(null)}
+          />
+        )}
+
+        {/* Report editor drawer */}
+        {FEATURES.ENABLE_MONTHLY_REPORTS && reportClassroom && (
+          <ReportEditorModal
+            key={reportClassroom.id}
+            classroom={reportClassroom}
+            onClose={() => setReportClassroom(null)}
           />
         )}
 
@@ -556,6 +575,20 @@ export default function TrainerHome() {
                       title="View analytics"
                     >
                       <BarChart3 className="w-5 h-5" />
+                    </button>
+                  )}
+
+                  {/* Monthly report button */}
+                  {FEATURES.ENABLE_MONTHLY_REPORTS && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReportClassroom(classroom);
+                      }}
+                      className="p-2 text-slate-500 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      title="Monthly report"
+                    >
+                      <FileText className="w-5 h-5" />
                     </button>
                   )}
 

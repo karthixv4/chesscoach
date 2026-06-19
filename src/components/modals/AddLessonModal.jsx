@@ -174,6 +174,7 @@ export default function AddLessonModal({ onClose, classroomId, lesson }) {
               </div>
             </div>
           </div>
+          </div>
 
           <div className="p-4 sm:p-6 flex gap-3 bg-slate-800 border-t border-slate-700 shrink-0">
             <button

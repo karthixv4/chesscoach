@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchClassrooms, fetchStudentSessions, fetchClassroomDetails } from "../store/classroomsSlice";
 import { fetchDailyLogs } from "../store/dailyLogsSlice";
+import { fetchReports, acknowledgeReport } from "../store/reportsSlice";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BookOpen, CheckCircle, Clock, ChevronRight, Calendar, FileText,
+  BookOpen, CheckCircle, Clock, ChevronRight, ChevronDown, Calendar, FileText,
   CalendarPlus, History, Video, CheckSquare, XCircle, Star,
-  Flame, PlusCircle,
+  Flame, PlusCircle, BarChart3, ThumbsUp,
 } from "lucide-react";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import DailyLogForm from "../components/dashboard/DailyLogForm";
@@ -59,12 +60,186 @@ function DotsLoader() {
   );
 }
 
+// ── Reports Tab — accordion card list ────────────────────────────────────────
+const MONTH_NAMES_FULL = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+
+function ReportCard({ report, classroomId, dispatch }) {
+  const [open, setOpen] = useState(false);
+  const monthName = MONTH_NAMES_FULL[report.month - 1];
+  const stats = report.statsSnapshot || {};
+
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
+      {/* ── Collapsed header (always visible) ── */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 p-4 sm:p-5 text-left hover:bg-slate-700/20 transition-colors group"
+      >
+        <div className="p-2 bg-purple-500/10 rounded-xl shrink-0">
+          <BarChart3 className="w-5 h-5 text-purple-400" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-white text-sm sm:text-base">
+            {monthName} {report.year} — Progress Report
+          </p>
+          {/* Quick-glance chips */}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <span className="text-xs text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded-full">
+              {stats.sessionsCompleted ?? "—"}/{stats.sessionsScheduled ?? "—"} sessions
+            </span>
+            {stats.avgScore != null && (
+              <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
+                Avg {stats.avgScore}%
+              </span>
+            )}
+            {report.acknowledgedAt ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                <CheckCircle className="w-3 h-3" /> Acknowledged
+              </span>
+            ) : (
+              <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                Pending acknowledgement
+              </span>
+            )}
+          </div>
+        </div>
+
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0 text-slate-500 group-hover:text-slate-300"
+        >
+          <ChevronDown className="w-5 h-5" />
+        </motion.div>
+      </button>
+
+      {/* ── Expanded detail panel ── */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="detail"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 sm:px-5 pb-5 space-y-5 border-t border-slate-700/50 pt-5">
+              {/* Stat tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  { label: "Sessions", value: `${stats.sessionsCompleted ?? "—"}/${stats.sessionsScheduled ?? "—"}`, sub: "completed" },
+                  { label: "HW Evaluated", value: stats.hwEvaluated ?? "—" },
+                  { label: "Avg Score", value: stats.avgScore != null ? `${stats.avgScore}%` : "—" },
+                  { label: "HW Submitted", value: stats.hwSubmitted ?? "—" },
+                  { label: "HW Assigned", value: stats.hwAssigned ?? "—" },
+                  ...(stats.practiceLogsCount > 0
+                    ? [{ label: "Practice Days", value: stats.practiceLogsCount }]
+                    : []),
+                ].map(s => (
+                  <div key={s.label} className="bg-slate-900/50 rounded-xl px-4 py-3">
+                    <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+                    <p className="text-lg sm:text-xl font-bold text-white mt-0.5">{s.value}</p>
+                    {s.sub && <p className="text-xs text-slate-600">{s.sub}</p>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Trainer remarks */}
+              {report.areasOfStrength && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Areas of Strength</h4>
+                  <div className="text-sm text-slate-300 prose prose-sm prose-invert max-w-none">
+                    <Markdown>{report.areasOfStrength}</Markdown>
+                  </div>
+                </div>
+              )}
+              {report.areasToImprove && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-400">Areas to Improve</h4>
+                  <div className="text-sm text-slate-300 prose prose-sm prose-invert max-w-none">
+                    <Markdown>{report.areasToImprove}</Markdown>
+                  </div>
+                </div>
+              )}
+              {report.trainerComments && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trainer Comments</h4>
+                  <div className="text-sm text-slate-300 prose prose-sm prose-invert max-w-none">
+                    <Markdown>{report.trainerComments}</Markdown>
+                  </div>
+                </div>
+              )}
+
+              {/* Acknowledge button */}
+              {!report.acknowledgedAt && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => dispatch(acknowledgeReport({ classroomId, reportId: report.id }))}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-medium hover:bg-emerald-500/25 transition-colors"
+                  >
+                    <ThumbsUp className="w-4 h-4" /> Mark as Acknowledged
+                  </button>
+                </div>
+              )}
+              {report.acknowledgedAt && (
+                <p className="text-xs text-slate-500">
+                  ✓ Acknowledged on {new Date(report.acknowledgedAt).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ReportsTab({ reports, classroomId, dispatch }) {
+  if (reports.length === 0) {
+    return (
+      <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-12 flex flex-col items-center gap-3 text-slate-400">
+        <BarChart3 className="w-12 h-12 opacity-30" />
+        <p className="text-center font-medium">No reports yet</p>
+        <p className="text-sm text-slate-500 text-center">
+          Monthly progress reports will appear here once your trainer publishes them.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {reports.map((report, i) => (
+        <motion.div
+          key={report.id}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.06 }}
+        >
+          <ReportCard
+            report={report}
+            classroomId={classroomId}
+            dispatch={dispatch}
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export default function StudentHome() {
+
   const { user } = useSelector((state) => state.auth);
   const { classrooms, status, detailsStatus, studentSessions, studentSessionsStatus } = useSelector(
     (state) => state.classrooms
   );
   const { logs, todayLog } = useSelector((state) => state.dailyLogs);
+  const { reports } = useSelector((state) => state.reports);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [dailyPuzzle, setDailyPuzzle] = useState(null);
@@ -88,6 +263,7 @@ export default function StudentHome() {
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "assignments", label: "Assignments", icon: FileText },
     { id: "performance", label: "Performance", icon: Flame },
+    ...(FEATURES.ENABLE_MONTHLY_REPORTS ? [{ id: "reports", label: "Reports", icon: BarChart3 }] : []),
   ];
 
   // ── Daily puzzle ────────────────────────────────────────────────────────────
@@ -137,6 +313,10 @@ export default function StudentHome() {
         .toISOString()
         .split("T")[0];
       dispatch(fetchDailyLogs({ classroomId: classroom.id, params: { from: fromStr } }));
+      // Fetch published reports
+      if (FEATURES.ENABLE_MONTHLY_REPORTS) {
+        dispatch(fetchReports(classroom.id));
+      }
     }
   }, [dispatch, classroom?.id, classroom?.homework]);
 
@@ -1005,7 +1185,7 @@ export default function StudentHome() {
               </div>
             )}
 
-            {/* ── Performance Tab ────────────────────────────────────────────── */}
+            {/* ── Performance Tab ─────────────────────────────────────────────── */}
             {activeTab === "performance" && (
               <div className="space-y-6">
                 <div className={`grid ${FEATURES.ENABLE_PRACTICE_LOGS ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1"} gap-6`}>
@@ -1063,6 +1243,15 @@ export default function StudentHome() {
                 </div>
                 <EvaluationsDeck homework={classroom.homework} classroomId={classroom.id} />
               </div>
+            )}
+
+            {/* ── Reports Tab ─────────────────────────────────────────────────── */}
+            {activeTab === "reports" && FEATURES.ENABLE_MONTHLY_REPORTS && (
+              <ReportsTab
+                reports={reports}
+                classroomId={classroom.id}
+                dispatch={dispatch}
+              />
             )}
           </div>
         </div>
