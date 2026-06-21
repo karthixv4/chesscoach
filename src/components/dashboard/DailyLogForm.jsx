@@ -191,7 +191,7 @@ export default function DailyLogForm({ classroomId, todayLog, onClose }) {
                 <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">
                   What did you practice?
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat.key}
@@ -211,7 +211,7 @@ export default function DailyLogForm({ classroomId, todayLog, onClose }) {
               </div>
 
               {/* Counters row */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">
                     Games played

@@ -117,7 +117,7 @@ export default function ClockTimePicker({ value, onChange, placeholder, disabled
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 w-[320px] flex flex-col items-center"
+              className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 w-full max-w-[320px] flex flex-col items-center"
             >
               {/* Header */}
               <div className="flex gap-2 text-5xl font-light mb-8 mt-2 items-center">

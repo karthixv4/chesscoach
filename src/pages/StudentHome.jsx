@@ -130,7 +130,7 @@ function ReportCard({ report, classroomId, dispatch }) {
           >
             <div className="px-4 sm:px-5 pb-5 space-y-5 border-t border-slate-700/50 pt-5">
               {/* Stat tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {[
                   { label: "Sessions", value: `${stats.sessionsCompleted ?? "—"}/${stats.sessionsScheduled ?? "—"}`, sub: "completed" },
                   { label: "HW Evaluated", value: stats.hwEvaluated ?? "—" },
@@ -790,7 +790,7 @@ export default function StudentHome() {
             {activeTab === "schedule" && (
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
                 {/* Schedule Sub-tabs */}
-                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
+                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide scroll-smooth">
                   <button
                     onClick={() => setScheduleSubTab("calendar")}
                     className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${scheduleSubTab === "calendar"
@@ -982,7 +982,7 @@ export default function StudentHome() {
             {activeTab === "assignments" && (
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
                 {/* Assignments Sub-tabs */}
-                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
+                <div className="flex border-b border-slate-700/50 overflow-x-auto scrollbar-hide scroll-smooth">
                   <button
                     onClick={() => setAssignmentSubTab("pending")}
                     className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-4 text-sm font-medium transition-colors whitespace-nowrap ${assignmentSubTab === "pending"

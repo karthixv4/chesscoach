@@ -373,7 +373,7 @@ export default function AssignHomeworkModal({
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Homework Type
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setType("worksheet")}
@@ -465,8 +465,8 @@ export default function AssignHomeworkModal({
                           />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="col-span-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="sm:col-span-1">
                             <label className="block text-xs font-medium text-slate-400 mb-1">No. Puzzles</label>
                             <input
                               type="number"
@@ -477,7 +477,7 @@ export default function AssignHomeworkModal({
                               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
                             />
                           </div>
-                          <div className="col-span-2">
+                          <div className="sm:col-span-2">
                             <label className="block text-xs font-medium text-slate-400 mb-1">Remarks / Instructions</label>
                             <input
                               type="text"

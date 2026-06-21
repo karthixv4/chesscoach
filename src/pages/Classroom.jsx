@@ -677,13 +677,13 @@ export default function Classroom() {
                     </h2>
                     <p className="text-sm text-slate-400">Set a session target for the student to keep track of planned lessons.</p>
                   </div>
-                  <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
                     <input
                       type="text"
                       value={targetTitle}
                       onChange={(e) => setTargetTitle(e.target.value)}
                       placeholder="e.g. Christmas Sessions"
-                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-48 text-sm"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-full sm:w-48 text-sm"
                     />
                     <input
                       type="number"
@@ -691,12 +691,12 @@ export default function Classroom() {
                       value={targetValue}
                       onChange={(e) => setTargetValue(e.target.value)}
                       placeholder="Target (e.g. 8)"
-                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-32 text-sm"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 w-full sm:w-32 text-sm"
                     />
                     <button
                       onClick={handleSaveTarget}
                       disabled={isSavingTarget}
-                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap w-full sm:w-auto"
                     >
                       {isSavingTarget ? "Saving..." : "Save Target"}
                     </button>
@@ -891,7 +891,7 @@ export default function Classroom() {
                   id={`homework-${hw.id}`}
                   className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden"
                 >
-                  <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
+                  <div className="p-6 border-b border-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                       <h3 className="text-xl font-semibold">{hw.title}</h3>
                       <div className="flex items-center flex-wrap gap-3 mt-2">
@@ -921,7 +921,7 @@ export default function Classroom() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                       {isTrainer && (
                         <div className="flex gap-2">
                           <button
@@ -1143,7 +1143,7 @@ export default function Classroom() {
                               <ImagePlus className="w-3 h-3" /> Add Images
                             </button>
                           </div>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                             {editingSubmissions[hw.id] && (
                               <button
                                 disabled={isSubmitting}
@@ -1151,7 +1151,7 @@ export default function Classroom() {
                                   setEditingSubmissions(prev => ({ ...prev, [hw.id]: false }));
                                   setSubmissionTexts(prev => ({ ...prev, [hw.id]: undefined }));
                                 }}
-                                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-medium transition-colors"
+                                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-medium transition-colors w-full sm:w-auto"
                               >
                                 Cancel
                               </button>
@@ -1162,7 +1162,7 @@ export default function Classroom() {
                                 handleSubmitHomework(hw, (submissionTexts[hw.id] ?? hw.submission) || "Submitted evidence images.");
                                 setSubmissionTexts(prev => ({ ...prev, [hw.id]: "" }));
                               }}
-                              className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                              className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
                               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                               {editingSubmissions[hw.id] ? "Update Submission" : "Mark as Completed"}
@@ -1388,14 +1388,14 @@ export default function Classroom() {
                             placeholder="Provide feedback... Use markdown for formatting."
                           />
 
-                          <div className="flex justify-end gap-2">
+                          <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                             <button
                               onClick={() => {
                                 setEvaluatingId(null);
                                 setFeedbackText("");
                                 setScore(0);
                               }}
-                              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto"
                             >
                               Cancel
                             </button>
@@ -1404,7 +1404,7 @@ export default function Classroom() {
                                 handleEvaluate(hw.id);
                               }}
                               disabled={score === 0 || isEvaluatingInline}
-                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[150px]"
+                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[150px] w-full sm:w-auto"
                             >
                               {isEvaluatingInline ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1560,7 +1560,7 @@ export default function Classroom() {
         </button>
       </header>
 
-      <div className="flex space-x-1 bg-slate-800/50 backdrop-blur-md p-1 rounded-2xl border border-slate-700/50 w-full sm:w-fit overflow-x-auto scrollbar-hide">
+      <div className="flex space-x-1 bg-slate-800/50 backdrop-blur-md p-1 rounded-2xl border border-slate-700/50 w-full sm:w-fit overflow-x-auto scrollbar-hide scroll-smooth">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

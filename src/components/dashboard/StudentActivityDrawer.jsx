@@ -177,7 +177,7 @@ export default function StudentActivityDrawer({ classroom, onClose }) {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <MiniStat label="Games" value={summary.weekly.totalGames} color="emerald" />
                   <MiniStat label="Minutes" value={summary.weekly.totalMinutes} color="blue" />
                   <MiniStat
@@ -196,7 +196,7 @@ export default function StudentActivityDrawer({ classroom, onClose }) {
                     This Month
                   </h3>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <MiniStat label="Days Logged" value={summary.monthly.logsSubmitted} color="blue" />
                   <MiniStat label="Total Min" value={summary.monthly.totalMinutes} color="purple" />
                   <MiniStat label="Total Games" value={summary.monthly.totalGames} color="emerald" />

@@ -328,17 +328,17 @@ export default function TrainerHome() {
           <h1 className="text-3xl font-semibold tracking-tight">Trainer Dashboard</h1>
           <p className="text-slate-400 mt-1">Manage your students and classrooms</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab("dashboard")}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "dashboard" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "dashboard" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
             >
               Dashboard
             </button>
             <button
               onClick={() => setActiveTab("calendar")}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "calendar" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "calendar" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
             >
               Calendar
             </button>
@@ -347,7 +347,7 @@ export default function TrainerHome() {
             onClick={() => {
               setIsAddStudentModalOpen(true);
             }}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <Users className="w-4 h-4" />
             Add Student
@@ -378,7 +378,7 @@ export default function TrainerHome() {
       {activeTab === "dashboard" && (
         <>
       {/* ── Stat cards ───────────────────────────────────────────────────── */}
-      <div className={`grid grid-cols-2 ${FEATURES.ENABLE_PRACTICE_LOGS ? "md:grid-cols-4" : "md:grid-cols-3"} gap-6`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${FEATURES.ENABLE_PRACTICE_LOGS ? "md:grid-cols-4" : "md:grid-cols-3"} gap-6`}>
         {/* Active students */}
         <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50">
           <div className="flex items-center gap-4">
@@ -571,7 +571,7 @@ export default function TrainerHome() {
                         e.stopPropagation();
                         setDrawerClassroom(classroom);
                       }}
-                      className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       title="View analytics"
                     >
                       <BarChart3 className="w-5 h-5" />
@@ -585,7 +585,7 @@ export default function TrainerHome() {
                         e.stopPropagation();
                         setReportClassroom(classroom);
                       }}
-                      className="p-2 text-slate-500 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-2 text-slate-500 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       title="Monthly report"
                     >
                       <FileText className="w-5 h-5" />
@@ -598,7 +598,7 @@ export default function TrainerHome() {
                       setEditingStudent({ id: classroom.id, studentName: classroom.studentName });
                       setIsAddStudentModalOpen(true);
                     }}
-                    className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Edit student"
                   >
                     <Edit2 className="w-5 h-5" />
@@ -616,7 +616,7 @@ export default function TrainerHome() {
                         },
                       });
                     }}
-                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Delete student"
                   >
                     <Trash2 className="w-5 h-5" />

@@ -219,18 +219,18 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                       minHeight="120px"
                     />
 
-                    <div className="flex justify-end gap-3 mt-4">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                       <button
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-sm font-medium transition-colors"
+                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleRework}
                         disabled={!feedback.trim() || isSubmitting}
-                        className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 border border-amber-500/50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                        className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 border border-amber-500/50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-full sm:w-auto"
                       >
                         {isSubmitting ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -241,7 +241,7 @@ export default function WorksheetEvaluationModal({ isOpen, onClose, homework, on
                       <button
                         onClick={handleSubmit}
                         disabled={score === 0 || isSubmitting}
-                        className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                        className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-full sm:w-auto"
                       >
                         {isSubmitting ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
