@@ -1,5 +1,6 @@
 import { Star, ChevronRight, MessageSquare, Award } from "lucide-react";
 import Markdown from "react-markdown";
+import ExpandableMarkdown from "../common/ExpandableMarkdown";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -58,8 +59,8 @@ export default function EvaluationsDeck({ homework, classroomId }) {
             <div className="flex-1 bg-slate-800/50 rounded-lg p-3 text-sm text-slate-300 border border-slate-700/50">
               <div className="flex gap-2 items-start">
                 <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="line-clamp-3 italic prose prose-sm prose-invert max-w-none text-slate-300">
-                  <Markdown>{hw.feedback || "Great effort!"}</Markdown>
+                <div className="italic prose prose-sm prose-invert max-w-none text-slate-300">
+                  <ExpandableMarkdown content={hw.feedback || "Great effort!"} maxHeight={80} />
                 </div>
               </div>
             </div>

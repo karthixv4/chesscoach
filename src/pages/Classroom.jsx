@@ -43,6 +43,7 @@ import {
 } from "../store/classroomsSlice";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import Markdown from "react-markdown";
+import ExpandableMarkdown from "../components/common/ExpandableMarkdown";
 import MarkdownEditor from "../components/common/MarkdownEditor";
 import AssignHomeworkModal from "../components/dashboard/AssignHomeworkModal";
 import ScheduleSessionModal from "../components/modals/ScheduleSessionModal";
@@ -1040,7 +1041,7 @@ export default function Classroom() {
                           {isTrainer ? "You Requested Rework" : "Trainer Requested Rework"}
                         </h4>
                         <div className="prose prose-sm prose-invert max-w-none text-slate-300">
-                          <Markdown>{hw.feedback}</Markdown>
+                          <ExpandableMarkdown content={hw.feedback} />
                         </div>
                       </div>
                     )}
@@ -1196,7 +1197,7 @@ export default function Classroom() {
                       </div>
                     )}
 
-                    {!isTrainer && hw.status?.toLowerCase() === "evaluated" && (
+                    {hw.status?.toLowerCase() === "evaluated" && (
                       <div className="mt-6 bg-slate-900/50 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1216,7 +1217,7 @@ export default function Classroom() {
                         {hw.feedback && (
                           <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
                             <p className="text-xs font-medium text-slate-400 uppercase mb-2">Trainer Feedback</p>
-                            <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">{hw.feedback}</p>
+                            <ExpandableMarkdown content={hw.feedback} />
                           </div>
                         )}
                       </div>
@@ -1421,8 +1422,8 @@ export default function Classroom() {
                           <h4 className={`text-sm font-medium ${hw.status?.toLowerCase() === "assigned" ? "text-amber-400" : "text-blue-400"} mb-2`}>
                             {hw.status?.toLowerCase() === "assigned" ? "Trainer Requested Rework" : "Trainer Feedback"}
                           </h4>
-                          <div className="prose prose-sm prose-invert max-w-none text-slate-300">
-                            <Markdown>{hw.feedback}</Markdown>
+                          <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
+                            <ExpandableMarkdown content={hw.feedback} />
                           </div>
                         </div>
                       )}

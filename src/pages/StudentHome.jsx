@@ -19,6 +19,7 @@ import ViewSessionModal from "../components/modals/ViewSessionModal";
 import CalendarView from "../components/dashboard/CalendarView";
 import EvaluationsDeck from "../components/dashboard/EvaluationsDeck";
 import Markdown from "react-markdown";
+import ExpandableMarkdown from "../components/common/ExpandableMarkdown";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -1091,7 +1092,7 @@ export default function StudentHome() {
                                     <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                                       <h5 className="text-xs font-semibold text-amber-400 mb-1">Trainer Comment:</h5>
                                       <div className="text-sm text-slate-300">
-                                        <Markdown>{hw.feedback}</Markdown>
+                                        <ExpandableMarkdown content={hw.feedback} maxHeight={120} />
                                       </div>
                                     </div>
                                   )}
