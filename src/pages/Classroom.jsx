@@ -67,7 +67,7 @@ const PDFViewer = ({ fileUrl }) => {
   };
   const embedUrl = getEmbeddableUrl(fileUrl);
   return (
-    <div className="flex-1 min-h-[500px] w-full rounded-2xl border-2 border-slate-700/50 bg-slate-900 flex flex-col overflow-hidden mb-6 mt-4">
+    <div className="flex-1 min-h-[500px] h-full w-full rounded-2xl border-2 border-slate-700/50 bg-slate-900 flex flex-col overflow-hidden">
       <div className="p-4 border-b border-slate-700/80 bg-slate-900 flex justify-between items-center px-6">
         <h4 className="font-medium text-slate-300">Assignment Document</h4>
         <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors rounded-lg border border-slate-600/50">Open in New Tab</a>
@@ -974,13 +974,16 @@ export default function Classroom() {
                     </div>
                   </div>
                   <div className="p-6">
-                    {hw.description && (
-                      <div className="mb-6 prose prose-invert max-w-none text-slate-300">
-                        <Markdown>{hw.description}</Markdown>
-                      </div>
-                    )}
+                    <div className={`flex flex-col ${(hw.type?.toLowerCase() === "image" || hw.type?.toLowerCase() === "worksheet") && hw.fileUrl && hw.fileUrl !== "#" ? "xl:flex-row gap-8" : "gap-6"}`}>
+                      {/* Main Column */}
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        {hw.description && (
+                          <div className="mb-6 prose prose-invert max-w-none text-slate-300">
+                            <ExpandableMarkdown content={hw.description} maxHeight={250} />
+                          </div>
+                        )}
 
-                    {/* Trainer's reference images */}
+                        {/* Trainer's reference images */}
                     {hw.imageUrls && hw.imageUrls.length > 0 && (
                       <div className="mb-4">
                         <p className="text-xs font-medium text-slate-400 uppercase mb-2">Reference Images</p>
@@ -995,10 +998,6 @@ export default function Classroom() {
                           ))}
                         </div>
                       </div>
-                    )}
-
-                    {(hw.type?.toLowerCase() === "image" || hw.type?.toLowerCase() === "worksheet") && hw.fileUrl && hw.fileUrl !== "#" && (
-                      <PDFViewer fileUrl={hw.fileUrl} />
                     )}
 
                     {hw.type?.toLowerCase() === "puzzle" && hw.puzzleSets && hw.puzzleSets.length > 0 && (
@@ -1223,6 +1222,14 @@ export default function Classroom() {
                       </div>
                     )}
 
+                    </div>
+                    {/* Right Column: PDF Viewer */}
+                    {(hw.type?.toLowerCase() === "image" || hw.type?.toLowerCase() === "worksheet") && hw.fileUrl && hw.fileUrl !== "#" && (
+                      <div className="w-full xl:w-[50%] shrink-0 flex flex-col min-h-[500px]">
+                        <PDFViewer fileUrl={hw.fileUrl} />
+                      </div>
+                    )}
+                    </div>
                   </div>
                 </div>
               ))}
