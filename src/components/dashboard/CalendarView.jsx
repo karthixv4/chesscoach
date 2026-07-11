@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Video, Calendar as CalendarIcon, CheckSquare, XCircle, Clock, CalendarDays } from 'lucide-react';
+import DailyAgendaModal from '../modals/DailyAgendaModal';
 
 const statusConfig = {
   completed: { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30", icon: CheckSquare },
@@ -20,6 +21,7 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
   const [selectedDateStr, setSelectedDateStr] = useState(todayStr);
+  const [agendaDateStr, setAgendaDateStr] = useState(null);
 
   // Notify parent of month boundaries
   useEffect(() => {
@@ -59,6 +61,11 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
     if (!dateStr) return;
     if (!sessionsByDate[dateStr]) sessionsByDate[dateStr] = [];
     sessionsByDate[dateStr].push(session);
+  });
+
+  // Sort sessions chronologically
+  Object.keys(sessionsByDate).forEach(dateStr => {
+    sessionsByDate[dateStr].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
   });
 
   return (
@@ -131,7 +138,8 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
             return (
               <div 
                 key={date} 
-                className={`min-h-[120px] p-3 border-b border-r border-slate-700/30 flex flex-col gap-2 transition-colors ${isToday ? 'bg-emerald-500/5' : 'hover:bg-slate-800/40'}`}
+                onClick={() => setAgendaDateStr(dateStr)}
+                className={`min-h-[120px] p-3 border-b border-r border-slate-700/30 flex flex-col gap-2 transition-colors cursor-pointer ${isToday ? 'bg-emerald-500/5' : 'hover:bg-slate-800/40'}`}
               >
                 <div className="flex items-center justify-between">
                   <span className={`w-7 h-7 flex items-center justify-center text-sm rounded-full font-medium ${isToday ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-300'}`}>
@@ -212,7 +220,7 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
               return (
                 <div 
                   key={date} 
-                  onClick={() => setSelectedDateStr(dateStr)}
+                  onClick={() => setAgendaDateStr(dateStr)}
                   className="py-1 cursor-pointer"
                 >
                   <div className={`w-9 h-9 sm:w-10 sm:h-10 mx-auto flex flex-col items-center justify-center rounded-full transition-all ${
@@ -243,76 +251,19 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
             })}
           </div>
         </div>
-
-        {/* Mobile Agenda List */}
-        <div className="p-4 sm:p-5 bg-slate-800/30 border-t border-slate-700/50 min-h-[250px]">
-          <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center justify-between">
-            <span>
-              {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
-            {selectedDateStr === todayStr && (
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] uppercase tracking-wider rounded-md">Today</span>
-            )}
-          </h3>
-
-          <div className="space-y-3">
-            <AnimatePresence mode="popLayout">
-              {sessionsByDate[selectedDateStr]?.length > 0 ? (
-                sessionsByDate[selectedDateStr].map((session, i) => {
-                  const statusKey = session.status?.toLowerCase() || 'scheduled';
-                  const cfg = statusConfig[statusKey] || statusConfig.scheduled;
-                  const Icon = cfg.icon;
-
-                  return (
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: i * 0.05 }}
-                      key={session.id}
-                      onClick={() => onSessionClick && onSessionClick(session)}
-                      className={`p-4 rounded-xl border flex gap-4 cursor-pointer hover:brightness-110 transition-all ${cfg.bg} ${cfg.border} bg-opacity-40`}
-                    >
-                      <div className={`mt-0.5 p-2 rounded-lg shrink-0 bg-slate-900/50 ${cfg.text}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-semibold text-white truncate text-sm sm:text-base">{session.title}</h4>
-                          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold bg-slate-900/50 ${cfg.text} shrink-0`}>
-                            {statusKey}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className={`text-xs font-medium flex items-center gap-1 bg-slate-900/40 px-2 py-0.5 rounded-md ${cfg.text}`}>
-                            <Clock className="w-3 h-3" />
-                            {session.startTime} {session.endTime ? `- ${session.endTime}` : ''}
-                          </span>
-                        </div>
-                        {userRole === 'trainer' && session.classroom?.student?.name && (
-                          <p className="text-xs text-slate-300 mt-2 truncate">
-                            Student: <span className="font-medium text-slate-200">{session.classroom.student.name}</span>
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center py-8 text-slate-500"
-                >
-                  <CalendarIcon className="w-10 h-10 mb-2 opacity-20" />
-                  <p className="text-sm">No sessions on this day.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
       </div>
+
+      <AnimatePresence>
+        {agendaDateStr && (
+          <DailyAgendaModal
+            dateStr={agendaDateStr}
+            sessions={sessionsByDate[agendaDateStr] || []}
+            onClose={() => setAgendaDateStr(null)}
+            onSessionClick={onSessionClick}
+            userRole={userRole}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

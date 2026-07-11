@@ -164,10 +164,14 @@ export default function Classroom() {
 
 
 
-  // Show skeleton loader when details are fetching (either overall status=loading, or detailsStatus=loading for this classroom)
-  const isLoadingDetails = detailsStatus === 'loading' && (!classroom || !classroom.sessions);
+  // Determine if we need to show the full page skeleton loader.
+  // We show it if we are still fetching the initial list of classrooms,
+  // or if we are fetching/waiting for the specific details of THIS classroom.
+  // Note: foundClassroom from summary doesn't have `sessions` defined.
+  const isWaitingForDetails = !foundClassroom || foundClassroom.sessions === undefined;
+  const isFetchingClassrooms = status === 'loading';
 
-  if ((status === 'loading' || detailsStatus === 'loading') && (!classroom || classroom.id !== id)) {
+  if (isFetchingClassrooms || isWaitingForDetails) {
     return (
       <div className="space-y-6">
         {/* Tab bar skeleton */}
@@ -765,7 +769,7 @@ export default function Classroom() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {upcomingSessions.map(renderSessionCard)}
-                {isLoadingDetails ? (
+                {detailsStatus === 'loading' ? (
                   [...Array(2)].map((_, i) => (
                     <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
                       <div className="flex items-center gap-3">
@@ -853,7 +857,7 @@ export default function Classroom() {
               )}
             </AnimatePresence>
 
-            {isLoadingDetails ? (
+            {detailsStatus === 'loading' ? (
               <div className="p-12 text-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
                 <div className="w-12 h-12 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-sm">Loading sessions...</p>
@@ -1233,7 +1237,7 @@ export default function Classroom() {
                   </div>
                 </div>
               ))}
-              {isLoadingDetails ? (
+              {detailsStatus === 'loading' ? (
                 [...Array(3)].map((_, i) => (
                   <div key={i} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
                     <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
