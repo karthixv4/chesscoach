@@ -105,6 +105,7 @@ export default function StudentSessionStats({ sessions, classrooms, isLoading })
           {stats.map((student, i) => {
             const displayTotal = student.target || student.totalScheduled;
             const percentage = displayTotal > 0 ? (student.completed / displayTotal) * 100 : 0;
+            const plannedPercentage = displayTotal > 0 ? (student.totalScheduled / displayTotal) * 100 : 0;
             const isDone = student.completed >= displayTotal && displayTotal > 0;
             
             return (
@@ -135,18 +136,35 @@ export default function StudentSessionStats({ sessions, classrooms, isLoading })
                   </span>
                 </div>
                 
-                <div className="h-2 w-full bg-slate-700/50 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(percentage, 100)}%` }}
-                    transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
-                    className={`h-full rounded-full relative ${
-                      isDone 
-                        ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' 
-                        : (student.target ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'bg-blue-500')
-                    }`}
-                  >
-                  </motion.div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-2 w-full bg-slate-700/50 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(percentage, 100)}%` }}
+                      transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
+                      className={`h-full rounded-full relative ${
+                        isDone 
+                          ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' 
+                          : (student.target ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'bg-blue-500')
+                      }`}
+                    >
+                    </motion.div>
+                  </div>
+                  
+                  {/* Secondary progress bar for planned/scheduled sessions */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-1 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(plannedPercentage, 100)}%` }}
+                        transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 + 0.2 }}
+                        className="h-full rounded-full bg-yellow-500/80"
+                      />
+                    </div>
+                    <span className="text-[9px] text-slate-500 whitespace-nowrap min-w-[35px] text-right">
+                      {student.totalScheduled} Plan
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             );
