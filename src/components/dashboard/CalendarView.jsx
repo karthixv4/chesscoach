@@ -138,7 +138,10 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
             return (
               <div 
                 key={date} 
-                onClick={() => setAgendaDateStr(dateStr)}
+                onClick={() => {
+                  setSelectedDateStr(dateStr);
+                  setAgendaDateStr(dateStr);
+                }}
                 className={`min-h-[120px] p-3 border-b border-r border-slate-700/30 flex flex-col gap-2 transition-colors cursor-pointer ${isToday ? 'bg-emerald-500/5' : 'hover:bg-slate-800/40'}`}
               >
                 <div className="flex items-center justify-between">
@@ -146,7 +149,7 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
                     {date}
                   </span>
                   {daySessions.length > 0 && (
-                    <span className="text-[10px] font-bold text-slate-500">{daySessions.length} sessions</span>
+                    <span className="text-[10px] font-bold text-slate-500">{daySessions.length} {daySessions.length === 1 ? 'session' : 'sessions'}</span>
                   )}
                 </div>
                 
@@ -220,7 +223,10 @@ export default function CalendarView({ sessions, isLoading, onMonthChange, userR
               return (
                 <div 
                   key={date} 
-                  onClick={() => setAgendaDateStr(dateStr)}
+                  onClick={() => {
+                    setSelectedDateStr(dateStr);
+                    setAgendaDateStr(dateStr);
+                  }}
                   className="py-1 cursor-pointer"
                 >
                   <div className={`w-9 h-9 sm:w-10 sm:h-10 mx-auto flex flex-col items-center justify-center rounded-full transition-all ${

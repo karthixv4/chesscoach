@@ -19,9 +19,8 @@ import ViewSessionModal from "../components/modals/ViewSessionModal";
 import CalendarView from "../components/dashboard/CalendarView";
 import EvaluationsDeck from "../components/dashboard/EvaluationsDeck";
 import Markdown from "react-markdown";
+import SessionNotes from "../components/common/SessionNotes";
 import ExpandableMarkdown from "../components/common/ExpandableMarkdown";
-import { Chessboard } from "react-chessboard";
-import { Chess } from "chess.js";
 
 // ── Compute current streak from a sorted (desc) logs array ──────────────────
 function computeStreak(logs = []) {
@@ -243,10 +242,6 @@ export default function StudentHome() {
   const { reports } = useSelector((state) => state.reports);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [dailyPuzzle, setDailyPuzzle] = useState(null);
-  const [puzzleFen, setPuzzleFen] = useState("");
-  const [puzzleLoading, setPuzzleLoading] = useState(true);
-  const [puzzleError, setPuzzleError] = useState(false);
   const [activeTab, setActiveTab] = useState("schedule");
   // Sub-tabs
   const [scheduleSubTab, setScheduleSubTab] = useState("calendar"); // "calendar" | "upcoming" | "past"
@@ -266,31 +261,6 @@ export default function StudentHome() {
     { id: "performance", label: "Performance", icon: Flame },
     ...(FEATURES.ENABLE_MONTHLY_REPORTS ? [{ id: "reports", label: "Reports", icon: BarChart3 }] : []),
   ];
-
-  // ── Daily puzzle ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    fetch("https://lichess.org/api/puzzle/daily")
-      .then((res) => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then((data) => {
-        setDailyPuzzle(data);
-        try {
-          const chess = new Chess();
-          chess.loadPgn(data.game.pgn);
-          setPuzzleFen(chess.fen());
-        } catch (e) {
-          console.error("Failed to parse PGN", e);
-          setPuzzleError(true);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch daily puzzle", err);
-        setPuzzleError(true);
-      })
-      .finally(() => setPuzzleLoading(false));
-  }, []);
 
   // ── Data fetching ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -609,12 +579,7 @@ export default function StudentHome() {
 
               {/* Session notes */}
               {statusKey === "completed" && session.notes && (
-                <div className="mt-3 text-sm text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Session Notes</p>
-                  <div className="line-clamp-2 prose prose-sm prose-invert max-w-none text-slate-300">
-                    <Markdown>{session.notes}</Markdown>
-                  </div>
-                </div>
+                <SessionNotes notes={session.notes} compact className="mt-3" />
               )}
 
               {/* Materials */}
@@ -751,9 +716,8 @@ export default function StudentHome() {
         })}
       </div>
 
-      {/* ── Main Tabs + Daily Puzzle ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+      {/* ── Main Dashboard Tabs ─────────────────────────────────────────────── */}
+      <div className="space-y-6">
           {/* Tab bar */}
           <div className="flex space-x-1 bg-slate-800/50 backdrop-blur-md p-1 rounded-2xl border border-slate-700/50 w-full sm:w-fit overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => {
@@ -1255,62 +1219,6 @@ export default function StudentHome() {
               />
             )}
           </div>
-        </div>
-
-        {/* ── Daily Puzzle sidebar ─────────────────────────────────────────── */}
-        <div className="space-y-8">
-          <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
-            <div className="p-6 border-b border-slate-700/50">
-              <h2 className="text-xl font-semibold">Daily Puzzle</h2>
-            </div>
-            <div className="p-6">
-              <div className="aspect-square w-full bg-slate-700 rounded-xl flex items-center justify-center relative overflow-hidden group cursor-pointer">
-                {puzzleLoading ? (
-                  <div className="flex flex-col items-center text-slate-400">
-                    <div className="w-8 h-8 border-4 border-slate-500 border-t-emerald-500 rounded-full animate-spin mb-4" />
-                    <p>Loading puzzle...</p>
-                  </div>
-                ) : puzzleError ? (
-                  <div className="flex flex-col items-center text-slate-400 px-4 text-center">
-                    <p>Failed to load daily puzzle.</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="mt-4 px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm text-white transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : dailyPuzzle && puzzleFen ? (
-                  <div className="w-full h-full pointer-events-none opacity-50 group-hover:scale-105 transition-transform duration-500">
-                    <Chessboard
-                      position={puzzleFen}
-                      customDarkSquareStyle={{ backgroundColor: "#334155" }}
-                      customLightSquareStyle={{ backgroundColor: "#94a3b8" }}
-                    />
-                  </div>
-                ) : (
-                  <img
-                    src="https://images.unsplash.com/photo-1529699211952-734e80c4d42b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                    alt="Chess Board"
-                    className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent z-10 flex flex-col justify-end p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">Daily Puzzle</h3>
-                  <a
-                    href={dailyPuzzle ? `https://lichess.org/training/${dailyPuzzle.puzzle.id}` : "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors w-fit text-sm"
-                  >
-                    Solve on Lichess
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Clock, Library, BookOpen, Link as LinkIcon, Video, CheckSquare, FastForward, Rewind, CheckCircle, XCircle } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import Markdown from "react-markdown";
+import { X, Calendar, Clock, Library, BookOpen, Video, CheckSquare } from "lucide-react";
+import { useSelector } from "react-redux";
+import SessionNotes from "../common/SessionNotes";
 
 export default function ViewSessionModal({
   onClose,
@@ -11,8 +11,6 @@ export default function ViewSessionModal({
   onHomeworkClick,
   onImageClick
 }) {
-  const dispatch = useDispatch();
-
   const { classrooms, studentSessions, trainerSessions } = useSelector((state) => state.classrooms);
 
   const classroom = classrooms.find(c => c.id === classroomId);
@@ -22,8 +20,6 @@ export default function ViewSessionModal({
 
   const materials = session?.sessionMaterials?.map(sm => sm.material) || session?.materials || [];
   const homeworks = session?.sessionHomework?.map(sh => sh.homework) || session?.homework || [];
-
-  const [expandedNotes, setExpandedNotes] = useState(false);
 
   const renderStatusBadge = (status) => {
     const s = status?.toLowerCase();
@@ -49,10 +45,10 @@ export default function ViewSessionModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-xl my-8 relative"
+          className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-2rem)] my-auto relative flex flex-col overflow-hidden"
         >
 
-          <div className="p-4 sm:p-6 border-b border-slate-700 flex justify-between items-center sticky top-0 bg-slate-800 z-10 rounded-t-2xl">
+          <div className="p-4 sm:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-10 rounded-t-2xl shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
                 <Calendar className="w-5 h-5" />
@@ -70,11 +66,11 @@ export default function ViewSessionModal({
           </div>
 
           {session ? (
-            <div className="p-4 sm:p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6 overflow-y-auto overscroll-contain min-h-0">
               {/* Header Info */}
               <div className="flex flex-col gap-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <h3 className="text-2xl font-bold text-white">{session.title}</h3>
+                  <h3 className="text-2xl font-bold text-white break-words [overflow-wrap:anywhere]">{session.title}</h3>
                   <div className="w-fit">{renderStatusBadge(session.status)}</div>
                 </div>
                 <div className="flex items-center gap-4 text-slate-400 text-sm">
@@ -126,24 +122,7 @@ export default function ViewSessionModal({
               )}
 
               {/* Notes */}
-              {session.notes && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Session Notes</h4>
-                  <div className="px-4 py-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
-                    <div className={`prose prose-invert max-w-none text-slate-300 text-sm ${!expandedNotes ? 'line-clamp-3 overflow-hidden text-ellipsis' : ''}`}>
-                      <Markdown>{session.notes}</Markdown>
-                    </div>
-                    {session.notes.length > 150 && (
-                      <button
-                        onClick={() => setExpandedNotes(!expandedNotes)}
-                        className="text-emerald-400 hover:text-emerald-300 text-xs font-medium mt-2 focus:outline-none"
-                      >
-                        {expandedNotes ? "Show Less" : "Show More"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              <SessionNotes notes={session.notes} />
 
               {/* Materials */}
               {materials.length > 0 && (

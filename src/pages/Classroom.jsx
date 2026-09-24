@@ -43,6 +43,7 @@ import {
 } from "../store/classroomsSlice";
 import ProgressTracker from "../components/dashboard/ProgressTracker";
 import Markdown from "react-markdown";
+import SessionNotes from "../components/common/SessionNotes";
 import ExpandableMarkdown from "../components/common/ExpandableMarkdown";
 import MarkdownEditor from "../components/common/MarkdownEditor";
 import AssignHomeworkModal from "../components/dashboard/AssignHomeworkModal";
@@ -569,12 +570,7 @@ export default function Classroom() {
                     <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded-xl space-y-2">
                       {session.notes && (
                         <div>
-                          <p className="text-xs text-slate-400 font-medium uppercase mb-1">
-                            Session Notes
-                          </p>
-                          <div className="text-sm text-slate-300 line-clamp-2 prose prose-sm prose-invert max-w-none">
-                            <Markdown>{session.notes}</Markdown>
-                          </div>
+                          <SessionNotes notes={session.notes} compact />
                         </div>
                       )}
                       {session.materials && session.materials.length > 0 && (

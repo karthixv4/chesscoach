@@ -24,6 +24,7 @@ function formatTime(minutes) {
 }
 
 export default function DailyAgendaModal({ dateStr, sessions, onClose, onSessionClick, userRole }) {
+  const isTrainer = userRole === 'trainer';
   // Sort sessions chronologically
   const sortedSessions = [...(sessions || [])].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
   
@@ -60,7 +61,7 @@ export default function DailyAgendaModal({ dateStr, sessions, onClose, onSession
     const sessionEnd = session.endTime ? parseTime(session.endTime) : sessionStart + 60;
 
     // Is there a gap before this session?
-    if (sessionStart > currentTime) {
+    if (isTrainer && sessionStart > currentTime) {
       timeline.push({
         type: 'free',
         startTime: formatTime(currentTime),
@@ -80,7 +81,7 @@ export default function DailyAgendaModal({ dateStr, sessions, onClose, onSession
   });
 
   // Is there a gap after the last session until the end of the day?
-  if (currentTime < dayEnd) {
+  if (isTrainer && currentTime < dayEnd) {
     timeline.push({
       type: 'free',
       startTime: formatTime(currentTime),
@@ -105,7 +106,7 @@ export default function DailyAgendaModal({ dateStr, sessions, onClose, onSession
             <h2 className="text-xl font-bold text-white">
               {dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
             </h2>
-            <p className="text-sm text-slate-400">Daily Agenda & Free Time</p>
+            <p className="text-sm text-slate-400">{isTrainer ? 'Daily Agenda & Free Time' : 'Your session schedule'}</p>
           </div>
           <button
             onClick={onClose}
@@ -118,7 +119,7 @@ export default function DailyAgendaModal({ dateStr, sessions, onClose, onSession
         <div className="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-1">
           {timeline.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-slate-400">No sessions or free time slots calculated.</p>
+              <p className="text-slate-400">{isTrainer ? 'No sessions or free time slots calculated.' : 'No sessions scheduled for this day.'}</p>
             </div>
           ) : (
             timeline.map((slot, idx) => {
